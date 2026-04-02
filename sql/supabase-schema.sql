@@ -196,7 +196,7 @@ CREATE INDEX idx_earnings_type ON earnings(type);
 CREATE INDEX idx_earnings_created_at ON earnings(created_at);
 
 -- ============================================================
--- 5. NOTIFICATIONS TABLE
+-- 5. NOTIFICATIONS TABLE (includes 'temporary' type)
 -- ============================================================
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -204,7 +204,7 @@ CREATE TABLE notifications (
     type TEXT NOT NULL DEFAULT 'system'
         CHECK (type IN (
             'delivery_request', 'delivery_completed', 'delivery_cancelled',
-            'earnings', 'system', 'warning', 'activation', 'rating'
+            'earnings', 'system', 'warning', 'activation', 'rating', 'temporary'
         )),
     title TEXT NOT NULL,
     message TEXT NOT NULL,
@@ -305,166 +305,139 @@ ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 
 -- ===== DRIVERS POLICIES =====
 
--- Driver reads own profile
 CREATE POLICY "drivers_select_own" ON drivers
     FOR SELECT
     USING (auth.uid() = user_id);
 
--- Driver updates own profile
 CREATE POLICY "drivers_update_own" ON drivers
     FOR UPDATE
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- Driver creates own profile during registration
 CREATE POLICY "drivers_insert_own" ON drivers
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
--- Any authenticated user can read drivers (needed for admin panel)
 CREATE POLICY "drivers_authenticated_read" ON drivers
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Any authenticated user can update drivers (admin operations)
 CREATE POLICY "drivers_authenticated_update" ON drivers
     FOR UPDATE
     USING (auth.role() = 'authenticated');
 
--- Any authenticated user can insert drivers (admin creates drivers)
 CREATE POLICY "drivers_authenticated_insert" ON drivers
     FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
 -- ===== DELIVERIES POLICIES =====
 
--- Driver sees own deliveries
 CREATE POLICY "deliveries_select_own" ON deliveries
     FOR SELECT
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Driver updates own deliveries
 CREATE POLICY "deliveries_update_own" ON deliveries
     FOR UPDATE
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Authenticated read all (admin)
 CREATE POLICY "deliveries_authenticated_read" ON deliveries
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Authenticated insert (admin creates loads)
 CREATE POLICY "deliveries_authenticated_insert" ON deliveries
     FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
--- Authenticated update (admin manages)
 CREATE POLICY "deliveries_authenticated_update" ON deliveries
     FOR UPDATE
     USING (auth.role() = 'authenticated');
 
 -- ===== EARNINGS POLICIES =====
 
--- Driver sees own earnings
 CREATE POLICY "earnings_select_own" ON earnings
     FOR SELECT
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Authenticated read all (admin)
 CREATE POLICY "earnings_authenticated_read" ON earnings
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Authenticated insert (system creates earnings records)
 CREATE POLICY "earnings_authenticated_insert" ON earnings
     FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
--- Authenticated update (admin marks as paid)
 CREATE POLICY "earnings_authenticated_update" ON earnings
     FOR UPDATE
     USING (auth.role() = 'authenticated');
 
 -- ===== NOTIFICATIONS POLICIES =====
 
--- Driver sees own notifications
 CREATE POLICY "notifications_select_own" ON notifications
     FOR SELECT
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Driver marks own notifications as read
 CREATE POLICY "notifications_update_own" ON notifications
     FOR UPDATE
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Driver deletes own notifications
 CREATE POLICY "notifications_delete_own" ON notifications
     FOR DELETE
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Authenticated insert (admin/system sends notifications)
 CREATE POLICY "notifications_authenticated_insert" ON notifications
     FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
--- Authenticated read all (admin)
 CREATE POLICY "notifications_authenticated_read" ON notifications
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
 -- ===== TEMPORARY ACTIVATION POLICIES =====
 
--- Anyone authenticated can read activation status
 CREATE POLICY "temp_activation_select" ON temporary_activation
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Authenticated can insert
 CREATE POLICY "temp_activation_insert" ON temporary_activation
     FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
--- Authenticated can update
 CREATE POLICY "temp_activation_update" ON temporary_activation
     FOR UPDATE
     USING (auth.role() = 'authenticated');
 
 -- ===== LOCATION HISTORY POLICIES =====
 
--- Driver inserts own location
 CREATE POLICY "location_insert_own" ON driver_location_history
     FOR INSERT
     WITH CHECK (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Driver reads own location history
 CREATE POLICY "location_select_own" ON driver_location_history
     FOR SELECT
     USING (
         driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())
     );
 
--- Authenticated read all (admin tracking)
 CREATE POLICY "location_authenticated_read" ON driver_location_history
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
 -- ===== STATUS HISTORY POLICIES =====
 
--- Authenticated full access
 CREATE POLICY "status_history_select" ON delivery_status_history
     FOR SELECT
     USING (auth.role() = 'authenticated');
@@ -475,12 +448,10 @@ CREATE POLICY "status_history_insert" ON delivery_status_history
 
 -- ===== ADMIN SETTINGS POLICIES =====
 
--- Authenticated can read
 CREATE POLICY "settings_select" ON admin_settings
     FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Authenticated can update
 CREATE POLICY "settings_update" ON admin_settings
     FOR UPDATE
     USING (auth.role() = 'authenticated');
@@ -489,7 +460,6 @@ CREATE POLICY "settings_update" ON admin_settings
 -- 11. FUNCTIONS
 -- ============================================================
 
--- Auto-update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -498,7 +468,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Auto-calculate grouped_units from items_count
 CREATE OR REPLACE FUNCTION calculate_grouped_units()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -507,7 +476,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Auto-calculate delivery_fee based on assigned driver type
 CREATE OR REPLACE FUNCTION calculate_delivery_fee()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -518,12 +486,10 @@ DECLARE
     v_temp_rate DECIMAL;
 BEGIN
     IF NEW.driver_id IS NOT NULL THEN
-        -- Get driver type
         SELECT driver_type INTO v_driver_type
         FROM drivers
         WHERE id = NEW.driver_id;
 
-        -- Get configurable rates from settings
         SELECT COALESCE(
             (SELECT value::DECIMAL FROM admin_settings WHERE key = 'permanent_commission_rate'),
             0.05
@@ -554,19 +520,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Auto-update driver stats + create earnings + notification on delivery completion
 CREATE OR REPLACE FUNCTION update_driver_stats_on_delivery()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Handle delivered status
     IF NEW.status = 'delivered' AND (OLD.status IS NULL OR OLD.status != 'delivered') THEN
-        -- Increment driver delivery count
         UPDATE drivers
         SET total_deliveries = total_deliveries + 1,
             updated_at = NOW()
         WHERE id = NEW.driver_id;
 
-        -- Create earnings record
         INSERT INTO earnings (driver_id, delivery_id, amount, type, description, status)
         VALUES (
             NEW.driver_id,
@@ -577,7 +539,6 @@ BEGIN
             'pending'
         );
 
-        -- Notify driver
         INSERT INTO notifications (driver_id, type, title, message, data)
         VALUES (
             NEW.driver_id,
@@ -588,7 +549,6 @@ BEGIN
         );
     END IF;
 
-    -- Handle cancelled status
     IF NEW.status = 'cancelled' AND (OLD.status IS NULL OR OLD.status != 'cancelled') THEN
         IF NEW.driver_id IS NOT NULL THEN
             INSERT INTO notifications (driver_id, type, title, message, data)
@@ -606,7 +566,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Auto-update driver average rating when customer rates
 CREATE OR REPLACE FUNCTION update_driver_rating()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -626,7 +585,6 @@ BEGIN
             updated_at = NOW()
         WHERE id = NEW.driver_id;
 
-        -- Notify driver of new rating
         INSERT INTO notifications (driver_id, type, title, message, data)
         VALUES (
             NEW.driver_id,
@@ -641,7 +599,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Record every delivery status change for audit trail
 CREATE OR REPLACE FUNCTION record_delivery_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -657,7 +614,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Force driver offline when suspended or inactive
 CREATE OR REPLACE FUNCTION handle_driver_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -668,7 +624,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Block temporary drivers from going online if hiring not activated
 CREATE OR REPLACE FUNCTION check_temp_driver_activation()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -692,7 +647,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- Always update last_seen when going online
     IF NEW.online_status = 'online' THEN
         NEW.last_seen = NOW();
     END IF;
@@ -705,7 +659,6 @@ $$ LANGUAGE plpgsql;
 -- 12. TRIGGERS
 -- ============================================================
 
--- updated_at auto-update triggers
 CREATE TRIGGER update_drivers_updated_at
     BEFORE UPDATE ON drivers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -722,37 +675,30 @@ CREATE TRIGGER update_temp_activation_updated_at
     BEFORE UPDATE ON temporary_activation
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Delivery grouped_units auto-calculation
 CREATE TRIGGER calculate_delivery_grouped_units
     BEFORE INSERT OR UPDATE OF items_count ON deliveries
     FOR EACH ROW EXECUTE FUNCTION calculate_grouped_units();
 
--- Delivery fee auto-calculation based on driver type
 CREATE TRIGGER calculate_delivery_fee_trigger
     BEFORE INSERT OR UPDATE OF driver_id, items_count, delivery_value ON deliveries
     FOR EACH ROW EXECUTE FUNCTION calculate_delivery_fee();
 
--- Driver stats + earnings + notifications on delivery completion
 CREATE TRIGGER update_driver_stats_trigger
     AFTER UPDATE OF status ON deliveries
     FOR EACH ROW EXECUTE FUNCTION update_driver_stats_on_delivery();
 
--- Driver rating auto-update on customer rating
 CREATE TRIGGER update_driver_rating_trigger
     AFTER UPDATE OF customer_rating ON deliveries
     FOR EACH ROW EXECUTE FUNCTION update_driver_rating();
 
--- Delivery status audit trail
 CREATE TRIGGER record_status_change_trigger
     AFTER INSERT OR UPDATE OF status ON deliveries
     FOR EACH ROW EXECUTE FUNCTION record_delivery_status_change();
 
--- Force offline on driver suspend/inactive
 CREATE TRIGGER handle_driver_status_trigger
     BEFORE UPDATE OF status ON drivers
     FOR EACH ROW EXECUTE FUNCTION handle_driver_status_change();
 
--- Block temp drivers from going online if not activated
 CREATE TRIGGER check_temp_activation_trigger
     BEFORE UPDATE OF online_status ON drivers
     FOR EACH ROW EXECUTE FUNCTION check_temp_driver_activation();
@@ -761,7 +707,6 @@ CREATE TRIGGER check_temp_activation_trigger
 -- 13. VIEWS
 -- ============================================================
 
--- Driver earnings summary (aggregated)
 CREATE OR REPLACE VIEW driver_earnings_summary AS
 SELECT
     d.id AS driver_id,
@@ -777,7 +722,6 @@ FROM drivers d
 LEFT JOIN earnings e ON e.driver_id = d.id
 GROUP BY d.id, d.full_name, d.driver_type, d.status, d.total_deliveries, d.rating;
 
--- Today's delivery statistics
 CREATE OR REPLACE VIEW todays_delivery_stats AS
 SELECT
     COUNT(*) FILTER (WHERE status = 'delivered') AS completed_today,
@@ -788,7 +732,6 @@ SELECT
 FROM deliveries
 WHERE DATE(created_at) = CURRENT_DATE;
 
--- Currently online drivers with active delivery count
 CREATE OR REPLACE VIEW online_drivers_view AS
 SELECT
     d.id,
@@ -817,7 +760,6 @@ ORDER BY d.last_seen DESC;
 -- 14. SEED DATA
 -- ============================================================
 
--- Initial temporary activation record (inactive by default)
 INSERT INTO temporary_activation (is_active, notes)
 VALUES (FALSE, 'Initial setup - temporary hiring inactive');
 
@@ -854,6 +796,19 @@ GRANT SELECT ON online_drivers_view TO authenticated;
 --   earnings
 --   notifications
 --   temporary_activation
+--
+-- Check constraints:
+-- SELECT conname, conrelid::regclass, pg_get_constraintdef(oid)
+--   FROM pg_constraint
+--   WHERE contype = 'c' AND connamespace = 'public'::regnamespace
+--   ORDER BY conrelid::regclass::text, conname;
+--
+-- Expected key constraints:
+--   deliveries_status_check: pending, assigned, accepted, picked_up,
+--                            in_transit, delivered, cancelled, failed
+--   notifications_type_check: delivery_request, delivery_completed,
+--                             delivery_cancelled, earnings, system,
+--                             warning, activation, rating, temporary
 --
 -- Check policies:
 -- SELECT tablename, policyname FROM pg_policies
