@@ -478,6 +478,47 @@
         <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('notifModal')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('notifForm').requestSubmit()"><i class="fas fa-paper-plane"></i> Send</button></div></div>
     </div>
 
+    <!-- DELIVERY DETAIL MODAL -->
+    <div class="modal-overlay" id="viewDelModal">
+        <div class="modal">
+            <div class="modal-hdr">
+                <span class="modal-title">Delivery Details</span>
+                <button class="modal-close" onclick="closeModal('viewDelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Order ID</label><div id="viewDelOrder" style="font-weight:700;color:var(--dark-gray);"></div></div>
+                    <div class="fg"><label class="fl">Status</label><div id="viewDelStatus"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Sender</label><div id="viewDelSender"></div></div>
+                    <div class="fg"><label class="fl">Sender Phone</label><div id="viewDelSenderPhone"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Sender Address</label><div id="viewDelSenderAddress"></div></div>
+                    <div class="fg"><label class="fl">Customer</label><div id="viewDelCustomer"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Customer Phone</label><div id="viewDelCustomerPhone"></div></div>
+                    <div class="fg"><label class="fl">Assigned Driver</label><div id="viewDelDriver"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Items</label><div id="viewDelItems"></div></div>
+                    <div class="fg"><label class="fl">Notes</label><div id="viewDelNotes"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Pickup Address</label><div id="viewDelPickup"></div></div>
+                    <div class="fg"><label class="fl">Drop-off Address</label><div id="viewDelDropoff"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="fg"><label class="fl">Delivery Fee</label><div id="viewDelFee"></div></div>
+                    <div class="fg"><label class="fl">Notes</label><div id="viewDelNotes"></div></div>
+                </div>
+            </div>
+            <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('viewDelModal')">Close</button></div>
+        </div>
+    </div>
+
     <div class="toast-box" id="toastBox"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -539,7 +580,24 @@
     function renderDel(){let f=allDel;if(delFilter!=='all')f=allDel.filter(d=>d.status===delFilter);const tb=document.getElementById('delTbl');document.getElementById('delPag').textContent=`Showing ${f.length} deliver${f.length!==1?'ies':'y'}`;if(!f.length){tb.innerHTML='<tr><td colspan="9" class="empty"><i class="fas fa-box-open"></i><h3>No Deliveries</h3></td></tr>';return;}tb.innerHTML=f.map(d=>`<tr><td style="font-weight:600">${d.order_id||'N/A'}</td><td><div>${d.customer_name||'N/A'}</div><div class="tbl-email">${d.customer_phone||''}</div></td><td>${d.drivers?.full_name||'<span style="color:#9A9EA6">Unassigned</span>'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.pickup_address||''}">${d.pickup_address||'N/A'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.delivery_address||''}">${d.delivery_address||'N/A'}</td><td>${d.items_count||0}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td style="font-weight:600">R${(d.delivery_fee||0).toFixed(2)}</td><td>${d.status==='pending'?`<button class="btn btn-sm btn-success" onclick="updDel('${d.id}','assigned')"><i class="fas fa-user-check"></i></button>`:''}<button class="btn btn-sm btn-secondary" onclick="viewDel('${d.id}')"><i class="fas fa-eye"></i></button></td></tr>`).join('');}
     function fDel(f,btn){delFilter=f;document.querySelectorAll('.dlf').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderDel();}
     async function updDel(id,st){try{const u={status:st,updated_at:new Date().toISOString()};if(st==='in_transit')u.picked_up_time=new Date().toISOString();if(st==='delivered')u.delivered_time=new Date().toISOString();await sb.from('deliveries').update(u).eq('id',id);toast('success',`Status → ${st}`);loadDeliveries();loadStats();}catch(e){toast('error',e.message);}}
-    function viewDel(id){const d=allDel.find(x=>x.id===id);if(!d)return;alert(`Order: ${d.order_id} Customer: ${d.customer_name} Phone: ${d.customer_phone} Pickup: ${d.pickup_address} Drop-off: ${d.delivery_address} Items: ${d.items_count} Status: ${d.status} Fee: R${(d.delivery_fee||0).toFixed(2)} Notes: ${d.notes||'None'}`);}
+    function viewDel(id){
+      const d = allDel.find((x) => x.id === id);
+      if (!d) return;
+      document.getElementById('viewDelOrder').textContent = d.order_id || 'N/A';
+      document.getElementById('viewDelSender').textContent = d.sender_name || d.customer_name || 'N/A';
+      document.getElementById('viewDelSenderPhone').textContent = d.sender_phone || d.customer_phone || 'N/A';
+      document.getElementById('viewDelSenderAddress').textContent = d.sender_address || d.pickup_address || 'N/A';
+      document.getElementById('viewDelCustomer').textContent = d.customer_name || 'N/A';
+      document.getElementById('viewDelCustomerPhone').textContent = d.customer_phone || 'N/A';
+      document.getElementById('viewDelDriver').textContent = d.drivers?.full_name || 'Unassigned';
+      document.getElementById('viewDelPickup').textContent = d.pickup_address || 'N/A';
+      document.getElementById('viewDelDropoff').textContent = d.delivery_address || 'N/A';
+      document.getElementById('viewDelItems').textContent = d.items_count || 0;
+      document.getElementById('viewDelStatus').textContent = d.status || 'N/A';
+      document.getElementById('viewDelFee').textContent = `R${(d.delivery_fee || 0).toFixed(2)}`;
+      document.getElementById('viewDelNotes').textContent = d.notes || 'None';
+      openModal('viewDelModal');
+    }
 
     // LOADS
     async function loadDrvOpts(){try{const{data}=await sb.from('drivers').select('id,full_name,driver_type').eq('status','active').order('full_name');const sel=document.getElementById('lDriver');sel.innerHTML='<option value="">Auto-assign</option>';(data||[]).forEach(d=>{sel.innerHTML+=`<option value="${d.id}">${d.full_name} (${d.driver_type==='owner'?'Owner':d.driver_type})</option>`;});}catch(e){console.error(e);}}
