@@ -339,9 +339,9 @@
                     <div class="card"><div class="card-hdr"><span class="card-title">Create New Delivery</span></div><div class="card-body">
                         <form id="loadForm" onsubmit="createLoad(event)">
                             <div class="fg"><label class="fl">Order ID</label><input type="text" class="fi" id="lOrd" placeholder="ORD-XXXX" required></div>
-                            <div class="form-row"><div class="fg"><label class="fl">Sender Name</label><input type="text" class="fi" id="lSName" required></div><div class="fg"><label class="fl">Sender Phone</label><input type="tel" class="fi" id="lSPhone" required></div></div>
+                            <div class="form-row"><div class="fg"><label class="fl">Sender Full Name</label><input type="text" class="fi" id="lSName" required></div><div class="fg"><label class="fl">Sender Phone Number</label><input type="tel" class="fi" id="lSPhone" required></div></div>
                             <div class="fg"><label class="fl">Pickup Address</label><input type="text" class="fi" id="lPickup" required></div>
-                            <div class="form-row"><div class="fg"><label class="fl">Customer Name</label><input type="text" class="fi" id="lCName" required></div><div class="fg"><label class="fl">Customer Phone</label><input type="tel" class="fi" id="lCPhone" required></div></div>
+                            <div class="form-row"><div class="fg"><label class="fl">Receiver Full Name</label><input type="text" class="fi" id="lCName" required></div><div class="fg"><label class="fl">Receiver Phone Number</label><input type="tel" class="fi" id="lCPhone" required></div></div>
                             <div class="fg"><label class="fl">Delivery Address</label><input type="text" class="fi" id="lDropoff" required></div>
                             <div class="form-row"><div class="fg"><label class="fl">Number of Items</label><input type="number" class="fi" id="lItems" min="1" value="1" required></div><div class="fg"><label class="fl">Delivery Value (R)</label><input type="number" class="fi" id="lVal" step="0.01" min="0" placeholder="0.00"></div></div>
                             <div class="form-row"><div class="fg"><label class="fl">Assign Driver</label><select class="fs" id="lDriver"><option value="">Auto-assign (nearest)</option></select></div><div class="fg"><label class="fl">Scheduled Time</label><input type="datetime-local" class="fi" id="lSched"></div></div>
@@ -493,14 +493,14 @@
                 </div>
                 <div class="form-row">
                     <div class="fg"><label class="fl">Sender</label><div id="viewDelSender"></div></div>
-                    <div class="fg"><label class="fl">Sender Phone</label><div id="viewDelSenderPhone"></div></div>
+                    <div class="fg"><label class="fl">Sender Phone Number</label><div id="viewDelSenderPhone"></div></div>
                 </div>
                 <div class="form-row">
                     <div class="fg"><label class="fl">Sender Address</label><div id="viewDelSenderAddress"></div></div>
-                    <div class="fg"><label class="fl">Customer</label><div id="viewDelCustomer"></div></div>
+                    <div class="fg"><label class="fl">Receiver Name</label><div id="viewDelCustomer"></div></div>
                 </div>
                 <div class="form-row">
-                    <div class="fg"><label class="fl">Customer Phone</label><div id="viewDelCustomerPhone"></div></div>
+                    <div class="fg"><label class="fl">Receiver Phone Number</label><div id="viewDelCustomerPhone"></div></div>
                     <div class="fg"><label class="fl">Assigned Driver</label><div id="viewDelDriver"></div></div>
                 </div>
                 <div class="form-row">
