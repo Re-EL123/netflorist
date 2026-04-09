@@ -91,6 +91,7 @@
         .stat-icon { width:48px; height:48px; border-radius:12px; display:flex; justify-content:center; align-items:center; font-size:20px; }
         .stat-change { font-size:12px; font-weight:600; padding:4px 10px; border-radius:20px; }
         .stat-change.up { color:var(--success-green); background:rgba(56,175,75,.1); }
+        .stat-change.warn { color:var(--warning-orange); background:rgba(245,166,35,.1); }
         .stat-val { font-size:32px; font-weight:700; color:var(--dark-gray); margin-bottom:4px; }
         .stat-label { font-size:13px; color:var(--input-gray); text-transform:uppercase; letter-spacing:.5px; }
 
@@ -112,7 +113,12 @@
         .btn-danger:hover { background:#c50000; }
         .btn-outline { background:transparent; border:2px solid var(--primary-red); color:var(--primary-red); }
         .btn-outline:hover { background:var(--primary-red); color:#fff; }
+        .btn-warning { background:var(--warning-orange); color:#fff; }
+        .btn-warning:hover { background:#d4890e; }
+        .btn-purple { background:var(--primary-purple); color:#fff; }
+        .btn-purple:hover { background:#6a28b0; }
         .btn-sm { height:32px; padding:0 14px; font-size:11px; border-radius:8px; }
+        .btn-full { width:100%; justify-content:center; }
 
         /* ===== TABLE ===== */
         .tbl-wrap { overflow-x:auto; }
@@ -143,8 +149,12 @@
         .s-assigned .dot,.s-accepted .dot { background:var(--primary-purple); }
         .s-cancelled { background:rgba(226,0,0,.1); color:var(--error-red); }
         .s-cancelled .dot { background:var(--error-red); }
+        .s-returned { background:rgba(245,166,35,.12); color:#c07800; }
+        .s-returned .dot { background:#c07800; }
+        .s-failed { background:rgba(226,0,0,.1); color:var(--error-red); }
+        .s-failed .dot { background:var(--error-red); }
 
-        /* Driver Type Badges - Updated */
+        /* Driver Type Badges */
         .dt-badge { display:inline-flex; padding:3px 10px; border-radius:6px; font-size:10px; font-weight:600; text-transform:uppercase; }
         .dt-permanent { background:rgba(126,51,200,.1); color:var(--primary-purple); }
         .dt-owner { background:rgba(59,130,246,.1); color:var(--blue); }
@@ -167,12 +177,52 @@
         .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; justify-content:center; align-items:center; z-index:2000; }
         .modal-overlay.show { display:flex; }
         .modal { background:#fff; border-radius:20px; width:720px; max-width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
-        .modal-hdr { display:flex; justify-content:space-between; align-items:center; padding:24px; border-bottom:1px solid #F1F5F5; }
+        .modal-sm { width:520px; }
+        .modal-hdr { display:flex; justify-content:space-between; align-items:center; padding:24px; border-bottom:1px solid #F1F5F5; position:sticky; top:0; background:#fff; z-index:1; border-radius:20px 20px 0 0; }
         .modal-title { font-size:18px; font-weight:600; color:var(--dark-gray); text-transform:uppercase; }
-        .modal-close { width:36px; height:36px; border-radius:10px; border:none; background:var(--light-gray); cursor:pointer; font-size:18px; color:var(--medium-gray); display:flex; justify-content:center; align-items:center; }
+        .modal-close { width:36px; height:36px; border-radius:10px; border:none; background:var(--light-gray); cursor:pointer; font-size:18px; color:var(--medium-gray); display:flex; justify-content:center; align-items:center; flex-shrink:0; }
         .modal-close:hover { background:#E8ECF0; }
         .modal-body { padding:24px; }
-        .modal-ftr { padding:16px 24px; border-top:1px solid #F1F5F5; display:flex; justify-content:flex-end; gap:10px; }
+        .modal-ftr { padding:16px 24px; border-top:1px solid #F1F5F5; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+        .modal-section { margin-bottom:4px; }
+        .modal-section-title { font-size:11px; font-weight:600; color:var(--primary-red); text-transform:uppercase; margin-bottom:12px; border-bottom:1px solid #F1F5F5; padding-bottom:6px; display:flex; align-items:center; gap:6px; }
+
+        /* ===== RETURN SPECIFIC STYLES ===== */
+        .return-info-card { background:rgba(192,120,0,.05); border:1.5px solid rgba(192,120,0,.2); border-radius:14px; padding:18px; margin-top:4px; }
+        .return-info-header { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#c07800; margin-bottom:14px; }
+        .return-info-header i { font-size:16px; }
+        .return-detail-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
+        .return-detail-item label { display:block; font-size:10px; font-weight:600; color:var(--input-gray); text-transform:uppercase; margin-bottom:3px; }
+        .return-detail-item .val { font-size:13px; color:var(--dark-gray); font-weight:500; }
+        .return-detail-full { margin-bottom:10px; }
+        .return-detail-full label { display:block; font-size:10px; font-weight:600; color:var(--input-gray); text-transform:uppercase; margin-bottom:3px; }
+        .return-detail-full .val { font-size:13px; color:var(--dark-gray); font-weight:500; background:#FAFBFC; border-radius:8px; padding:8px 12px; border:1px solid #F1F5F5; }
+        .return-admin-actions { display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(192,120,0,.3); }
+
+        /* Char counter */
+        .char-counter { font-size:10px; color:var(--input-gray); text-align:right; margin-top:4px; transition:color .2s; }
+        .char-counter.warn { color:var(--warning-orange); font-weight:600; }
+        .char-counter.danger { color:var(--error-red); font-weight:600; }
+
+        /* Return confirm banner */
+        .confirm-banner { border-radius:12px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; margin-bottom:20px; }
+        .confirm-banner.danger { background:rgba(226,0,0,.06); border:1px solid rgba(226,0,0,.15); }
+        .confirm-banner.warning { background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.2); }
+        .confirm-banner-icon { font-size:18px; margin-top:1px; flex-shrink:0; }
+        .confirm-banner-title { font-size:13px; font-weight:700; margin-bottom:2px; }
+        .confirm-banner-sub { font-size:11px; color:var(--medium-gray); }
+
+        /* Returns summary strip */
+        .returns-strip { background:linear-gradient(135deg,rgba(192,120,0,.08),rgba(245,166,35,.05)); border:1px solid rgba(192,120,0,.15); border-radius:14px; padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+        .returns-strip-info { display:flex; align-items:center; gap:12px; }
+        .returns-strip-icon { width:42px; height:42px; border-radius:10px; background:rgba(192,120,0,.12); display:flex; align-items:center; justify-content:center; font-size:18px; color:#c07800; }
+        .returns-strip-count { font-size:26px; font-weight:700; color:#c07800; }
+        .returns-strip-label { font-size:12px; color:var(--medium-gray); font-weight:500; }
+        .returns-strip-actions { display:flex; gap:8px; }
+
+        /* Detail field display */
+        .detail-field { background:#FAFBFC; border:1px solid #F1F5F5; border-radius:8px; padding:10px 12px; font-size:13px; color:var(--dark-gray); min-height:36px; word-break:break-word; }
+        .detail-field.empty-val { color:var(--input-gray); font-style:italic; }
 
         /* ===== ACTIVATION ===== */
         .act-panel { background:#fff; border-radius:16px; padding:24px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; justify-content:space-between; align-items:center; }
@@ -232,7 +282,7 @@
         @media(max-width:768px) {
             .sidebar{transform:translateX(-100%);} .sidebar.open{transform:translateX(0);}
             .main{margin-left:0;} .topbar-ham{display:block;} .topbar-search{display:none;}
-            .stats-grid,.grid-2,.grid-3,.form-row,.earn-grid{grid-template-columns:1fr;}
+            .stats-grid,.grid-2,.grid-3,.form-row,.earn-grid,.return-detail-row{grid-template-columns:1fr;}
         }
 
         /* Driver Type Info Panel */
@@ -243,6 +293,10 @@
         .type-info-dot.permanent { background:var(--primary-purple); }
         .type-info-dot.owner { background:var(--blue); }
         .type-info-dot.temporary { background:var(--warning-orange); }
+
+        /* Loading spinner */
+        .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -272,7 +326,7 @@
             <div class="sb-sec">Main</div>
             <a class="sb-link active" data-page="dashboard" onclick="go('dashboard')"><i class="fas fa-th-large"></i>Dashboard</a>
             <a class="sb-link" data-page="drivers" onclick="go('drivers')"><i class="fas fa-users"></i>Drivers<span class="badge" id="pendBadge">0</span></a>
-            <a class="sb-link" data-page="deliveries" onclick="go('deliveries')"><i class="fas fa-box"></i>Deliveries</a>
+            <a class="sb-link" data-page="deliveries" onclick="go('deliveries')"><i class="fas fa-box"></i>Deliveries<span class="badge" id="returnsBadge" style="background:#c07800;color:#fff;display:none">0</span></a>
             <a class="sb-link" data-page="loads" onclick="go('loads')"><i class="fas fa-plus-circle"></i>Create Load</a>
             <div class="sb-sec">Management</div>
             <a class="sb-link" data-page="earnings" onclick="go('earnings')"><i class="fas fa-wallet"></i>Earnings</a>
@@ -306,11 +360,16 @@
                     <div class="stat-card"><div class="stat-hdr"><div class="stat-icon" style="background:rgba(56,175,75,.1);color:#38AF4B"><i class="fas fa-signal"></i></div><span class="stat-change up">Live</span></div><div class="stat-val" id="sOnline">0</div><div class="stat-label">Online Drivers</div></div>
                     <div class="stat-card"><div class="stat-hdr"><div class="stat-icon" style="background:rgba(59,130,246,.1);color:#3B82F6"><i class="fas fa-shipping-fast"></i></div><span class="stat-change up">Active</span></div><div class="stat-val" id="sActive">0</div><div class="stat-label">Active Deliveries</div></div>
                     <div class="stat-card"><div class="stat-hdr"><div class="stat-icon" style="background:rgba(239,62,98,.1);color:#EF3E62"><i class="fas fa-check-circle"></i></div><span class="stat-change up">Today</span></div><div class="stat-val" id="sCompleted">0</div><div class="stat-label">Completed Today</div></div>
-                    <div class="stat-card"><div class="stat-hdr"><div class="stat-icon" style="background:rgba(126,51,200,.1);color:#7E33C8"><i class="fas fa-coins"></i></div><span class="stat-change up">Today</span></div><div class="stat-val" id="sEarnings">R0</div><div class="stat-label">Today's Earnings</div></div>
+                    <div class="stat-card"><div class="stat-hdr"><div class="stat-icon" style="background:rgba(192,120,0,.1);color:#c07800"><i class="fas fa-undo-alt"></i></div><span class="stat-change warn" id="sReturnedChange">Today</span></div><div class="stat-val" id="sReturned">0</div><div class="stat-label">Returns Today</div></div>
                 </div>
                 <div class="grid-2">
                     <div class="card"><div class="card-hdr"><span class="card-title">Recent Deliveries</span><button class="btn btn-sm btn-secondary" onclick="go('deliveries')">View All</button></div><div class="card-body"><div class="tbl-wrap"> <table> <thead> <th>Order</th><th>Driver</th><th>Status</th><th>Amount</th> </thead> <tbody id="recentDel"> <tr><td colspan="4" style="text-align:center;color:#9A9EA6;padding:30px">Loading...</td></tr> </tbody> </table> </div></div></div>
                     <div class="card"><div class="card-hdr"><span class="card-title">Pending Approvals</span><button class="btn btn-sm btn-primary" onclick="go('drivers')">Manage</button></div><div class="card-body"><div class="tbl-wrap"> <table> <thead> <th>Driver</th><th>Type</th><th>Applied</th><th>Actions</th> </thead> <tbody id="pendApprovals"> <tr><td colspan="4" style="text-align:center;color:#9A9EA6;padding:30px">Loading...</td></tr> </tbody> </table> </div></div></div>
+                </div>
+                <!-- Returns alert on dashboard -->
+                <div id="dashReturnsAlert" style="display:none" class="card" style="border-left:4px solid #c07800">
+                    <div class="card-hdr"><span class="card-title" style="color:#c07800"><i class="fas fa-undo-alt" style="margin-right:8px"></i>Returned Deliveries Requiring Attention</span><button class="btn btn-sm btn-warning" onclick="go('deliveries');fDel('returned',null)">View All Returns</button></div>
+                    <div class="card-body"><div class="tbl-wrap"> <table> <thead> <th>Order</th><th>Driver</th><th>Return Reason</th><th>Returned At</th><th>Actions</th> </thead> <tbody id="dashReturnsTbl"> </tbody> </table> </div></div>
                 </div>
                 <div class="card"><div class="card-hdr"><span class="card-title">Delivery Trends (Last 7 Days)</span></div><div class="card-body"><div class="chart-ph"><i class="fas fa-chart-line"></i><p>Chart visualization — integrate Chart.js for live data</p></div></div></div>
             </div>
@@ -326,9 +385,31 @@
 
             <!-- DELIVERIES -->
             <div class="page-sec" id="pg-deliveries">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-                    <div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm dlf active" data-f="all" onclick="fDel('all',this)">All</button><button class="btn btn-secondary btn-sm dlf" data-f="pending" onclick="fDel('pending',this)">Pending</button><button class="btn btn-secondary btn-sm dlf" data-f="assigned" onclick="fDel('assigned',this)">Assigned</button><button class="btn btn-secondary btn-sm dlf" data-f="in_transit" onclick="fDel('in_transit',this)">In Transit</button><button class="btn btn-secondary btn-sm dlf" data-f="delivered" onclick="fDel('delivered',this)">Delivered</button></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn btn-secondary btn-sm dlf active" data-f="all" onclick="fDel('all',this)">All</button>
+                        <button class="btn btn-secondary btn-sm dlf" data-f="pending" onclick="fDel('pending',this)">Pending</button>
+                        <button class="btn btn-secondary btn-sm dlf" data-f="assigned" onclick="fDel('assigned',this)">Assigned</button>
+                        <button class="btn btn-secondary btn-sm dlf" data-f="in_transit" onclick="fDel('in_transit',this)">In Transit</button>
+                        <button class="btn btn-secondary btn-sm dlf" data-f="delivered" onclick="fDel('delivered',this)">Delivered</button>
+                        <button class="btn btn-sm dlf" data-f="returned" onclick="fDel('returned',this)" id="returnFilterBtn" style="background:rgba(192,120,0,.1);color:#c07800;border:1px solid rgba(192,120,0,.25)"><i class="fas fa-undo-alt" style="font-size:10px"></i> Returned <span id="returnFilterCount" style="background:#c07800;color:#fff;border-radius:10px;padding:0 6px;font-size:9px;margin-left:2px">0</span></button>
+                        <button class="btn btn-secondary btn-sm dlf" data-f="cancelled" onclick="fDel('cancelled',this)">Cancelled</button>
+                    </div>
                     <button class="btn btn-primary" onclick="go('loads')"><i class="fas fa-plus"></i> Create Delivery</button>
+                </div>
+                <!-- Returns strip (shown when returned filter active) -->
+                <div class="returns-strip" id="returnsStrip" style="display:none">
+                    <div class="returns-strip-info">
+                        <div class="returns-strip-icon"><i class="fas fa-undo-alt"></i></div>
+                        <div>
+                            <div style="display:flex;align-items:baseline;gap:8px"><span class="returns-strip-count" id="returnsStripCount">0</span><span class="returns-strip-label">returned deliveries need admin action</span></div>
+                            <div style="font-size:11px;color:var(--input-gray);margin-top:2px">Re-dispatch to a driver or cancel to resolve</div>
+                        </div>
+                    </div>
+                    <div class="returns-strip-actions">
+                        <button class="btn btn-sm btn-warning" onclick="bulkRedispatch()"><i class="fas fa-paper-plane"></i> Bulk Re-dispatch</button>
+                        <button class="btn btn-sm btn-secondary" onclick="exportReturns()"><i class="fas fa-download"></i> Export</button>
+                    </div>
                 </div>
                 <div class="card"><div class="card-body" style="padding:0"><div class="tbl-wrap"> <table> <thead> <th>Order</th><th>Customer</th><th>Driver</th><th>Pickup</th><th>Drop-off</th><th>Items</th><th>Status</th><th>Fee</th><th>Actions</th> </thead> <tbody id="delTbl"> <tr><td colspan="9" class="empty"><p>Loading...</p></td></tr> </tbody> </table> </div><div class="pag"><div class="pag-info" id="delPag">Showing 0</div><div></div></div></div></div>
             </div>
@@ -428,46 +509,36 @@
         </div>
     </div>
 
-    <!-- DRIVER MODAL - ENHANCED WITH COMPLETE FIELDS -->
+    <!-- ====================================================== -->
+    <!-- DRIVER MODAL -->
+    <!-- ====================================================== -->
     <div class="modal-overlay" id="drvModal">
         <div class="modal"><div class="modal-hdr"><span class="modal-title" id="drvModalTitle">Add Driver</span><button class="modal-close" onclick="closeModal('drvModal')">&times;</button></div>
         <div class="modal-body"><form id="drvForm" onsubmit="saveDriver(event)">
             <input type="hidden" id="drvEditId">
-            
-            <!-- Personal Information -->
-            <div style="margin-bottom:20px"><div style="font-size:11px;font-weight:600;color:var(--primary-red);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid #F1F5F5;padding-bottom:6px"><i class="fas fa-user"></i> Personal Information</div></div>
+            <div class="modal-section"><div class="modal-section-title"><i class="fas fa-user"></i> Personal Information</div></div>
             <div class="form-row"><div class="fg"><label class="fl">Full Name *</label><input type="text" class="fi" id="drvName" required></div><div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="drvEmail" required></div></div>
             <div class="form-row"><div class="fg"><label class="fl">Phone *</label><input type="tel" class="fi" id="drvPhone" required></div><div class="fg"><label class="fl">ID/Passport</label><input type="text" class="fi" id="drvIdNumber" placeholder="ID/Passport Number"></div></div>
-            
-            <!-- License Details -->
-            <div style="margin:20px 0 12px"><div style="font-size:11px;font-weight:600;color:var(--primary-red);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid #F1F5F5;padding-bottom:6px"><i class="fas fa-id-card"></i> License Information</div></div>
+            <div class="modal-section" style="margin-top:8px"><div class="modal-section-title"><i class="fas fa-id-card"></i> License Information</div></div>
             <div class="form-row"><div class="fg"><label class="fl">License Number *</label><input type="text" class="fi" id="drvLic" required></div><div class="fg"><label class="fl">License Class</label><select class="fs" id="drvLicClass"><option value="">Select Class</option><option value="A">A (Motorcycle)</option><option value="B">B (Light Vehicle)</option><option value="C1">C1 (Light Truck)</option><option value="C">C (Heavy Truck)</option><option value="EB">EB (Code 8)</option><option value="EC1">EC1 (Code 10)</option><option value="EC">EC (Code 14)</option></select></div></div>
             <div class="form-row"><div class="fg"><label class="fl">License Expiry Date</label><input type="date" class="fi" id="drvLicExpiry"></div><div class="fg"><label class="fl">License Issuing Country</label><input type="text" class="fi" id="drvLicCountry" placeholder="South Africa" value="South Africa"></div></div>
-            
-            <!-- Driver Type - PERMANENT SELECTION (explicit & permanent) -->
-            <div style="margin:20px 0 12px"><div style="font-size:11px;font-weight:600;color:var(--primary-red);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid #F1F5F5;padding-bottom:6px"><i class="fas fa-tag"></i> Driver Type (Permanent Selection)</div></div>
+            <div class="modal-section" style="margin-top:8px"><div class="modal-section-title"><i class="fas fa-tag"></i> Driver Type (Permanent Selection)</div></div>
             <div class="form-row"><div class="fg"><label class="fl">Driver Type *</label><select class="fs" id="drvType" required onchange="updateDriverTypeInfo(this.value)"><option value="permanent">Permanent Driver</option><option value="owner">Owner Driver</option><option value="temporary">Temporary Driver</option></select><div style="font-size:10px;color:var(--input-gray);margin-top:4px"><i class="fas fa-info-circle"></i> This type is permanent and cannot be changed after creation</div></div><div class="fg"><label class="fl">Vehicle Type</label><select class="fs" id="drvVeh"><option value="Car">Car</option><option value="Motorcycle">Motorcycle</option><option value="Van">Van</option><option value="Bakkie">Bakkie</option><option value="Truck">Truck</option><option value="Bicycle">Bicycle</option></select></div></div>
-            <div id="typeInfoPanel" style="background:#F8F9FA;border-radius:8px;padding:12px;margin-bottom:16px;border-left:3px solid var(--primary-purple)">
-                <div style="font-size:12px;font-weight:600" id="typeInfoTitle">Permanent Driver</div>
-                <div style="font-size:11px;color:var(--medium-gray)" id="typeInfoDesc">Full-time driver with commission-based earnings (5% of delivery value)</div>
-            </div>
-            
-            <!-- Vehicle Information -->
-            <div style="margin:20px 0 12px"><div style="font-size:11px;font-weight:600;color:var(--primary-red);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid #F1F5F5;padding-bottom:6px"><i class="fas fa-car"></i> Vehicle Information</div></div>
+            <div id="typeInfoPanel" style="background:#F8F9FA;border-radius:8px;padding:12px;margin-bottom:16px;border-left:3px solid var(--primary-purple)"><div style="font-size:12px;font-weight:600" id="typeInfoTitle">Permanent Driver</div><div style="font-size:11px;color:var(--medium-gray)" id="typeInfoDesc">Full-time driver with commission-based earnings (5% of delivery value)</div></div>
+            <div class="modal-section"><div class="modal-section-title"><i class="fas fa-car"></i> Vehicle Information</div></div>
             <div class="form-row"><div class="fg"><label class="fl">Vehicle Make</label><input type="text" class="fi" id="drvVehicleMake" placeholder="e.g., Toyota"></div><div class="fg"><label class="fl">Vehicle Model</label><input type="text" class="fi" id="drvVehicleModel" placeholder="e.g., Corolla"></div></div>
             <div class="form-row"><div class="fg"><label class="fl">Vehicle Registration</label><input type="text" class="fi" id="drvVehicleReg" placeholder="ABC 123 GP"></div><div class="fg"><label class="fl">Vehicle Year</label><input type="text" class="fi" id="drvVehicleYear" placeholder="e.g., 2020"></div></div>
             <div class="fg"><label class="fl">Vehicle Description</label><textarea class="ft" id="drvVehicleDesc" placeholder="Color, special features, condition notes..."></textarea></div>
-            
-            <!-- Additional Information -->
-            <div style="margin:20px 0 12px"><div style="font-size:11px;font-weight:600;color:var(--primary-red);text-transform:uppercase;margin-bottom:12px;border-bottom:1px solid #F1F5F5;padding-bottom:6px"><i class="fas fa-map-marker-alt"></i> Location & Status</div></div>
+            <div class="modal-section"><div class="modal-section-title"><i class="fas fa-map-marker-alt"></i> Location & Status</div></div>
             <div class="form-row"><div class="fg"><label class="fl">Residential Area</label><input type="text" class="fi" id="drvArea" placeholder="e.g., Cape Town CBD"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="drvStatus"><option value="pending">Pending</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div></div>
-            
             <div class="fg" id="drvPassGrp"><label class="fl">Password * (new drivers)</label><input type="password" class="fi" id="drvPass" minlength="6" placeholder="Min 6 chars"></div>
         </form></div>
         <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('drvModal')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('drvForm').requestSubmit()"><i class="fas fa-save"></i> Save Driver</button></div></div>
     </div>
 
+    <!-- ====================================================== -->
     <!-- NOTIFICATION MODAL -->
+    <!-- ====================================================== -->
     <div class="modal-overlay" id="notifModal">
         <div class="modal"><div class="modal-hdr"><span class="modal-title">Send Notification</span><button class="modal-close" onclick="closeModal('notifModal')">&times;</button></div>
         <div class="modal-body"><form id="notifForm" onsubmit="sendNotif(event)">
@@ -479,7 +550,9 @@
         <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('notifModal')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('notifForm').requestSubmit()"><i class="fas fa-paper-plane"></i> Send</button></div></div>
     </div>
 
-    <!-- DELIVERY DETAIL MODAL -->
+    <!-- ====================================================== -->
+    <!-- DELIVERY DETAIL MODAL (FULL - WITH RETURN SUPPORT) -->
+    <!-- ====================================================== -->
     <div class="modal-overlay" id="viewDelModal">
         <div class="modal">
             <div class="modal-hdr">
@@ -487,36 +560,178 @@
                 <button class="modal-close" onclick="closeModal('viewDelModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Order ID</label><div id="viewDelOrder" style="font-weight:700;color:var(--dark-gray);"></div></div>
+                <!-- Order & Status -->
+                <div class="modal-section-title"><i class="fas fa-receipt"></i> Order Information</div>
+                <div class="form-row" style="margin-bottom:0">
+                    <div class="fg"><label class="fl">Order ID</label><div class="detail-field" id="viewDelOrder"></div></div>
                     <div class="fg"><label class="fl">Status</label><div id="viewDelStatus"></div></div>
                 </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Sender</label><div id="viewDelSender"></div></div>
-                    <div class="fg"><label class="fl">Sender Phone Number</label><div id="viewDelSenderPhone"></div></div>
+                <div class="form-row" style="margin-bottom:0">
+                    <div class="fg"><label class="fl">Delivery Fee</label><div class="detail-field" id="viewDelFee"></div></div>
+                    <div class="fg"><label class="fl">Items</label><div class="detail-field" id="viewDelItems"></div></div>
                 </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Sender Address</label><div id="viewDelSenderAddress"></div></div>
-                    <div class="fg"><label class="fl">Receiver Name</label><div id="viewDelCustomer"></div></div>
+
+                <!-- Sender -->
+                <div class="modal-section-title" style="margin-top:16px"><i class="fas fa-user"></i> Sender</div>
+                <div class="form-row" style="margin-bottom:0">
+                    <div class="fg"><label class="fl">Sender Name</label><div class="detail-field" id="viewDelSender"></div></div>
+                    <div class="fg"><label class="fl">Sender Phone</label><div class="detail-field" id="viewDelSenderPhone"></div></div>
                 </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Receiver Phone Number</label><div id="viewDelCustomerPhone"></div></div>
-                    <div class="fg"><label class="fl">Assigned Driver</label><div id="viewDelDriver"></div></div>
+                <div class="fg"><label class="fl">Pickup Address</label><div class="detail-field" id="viewDelPickup"></div></div>
+
+                <!-- Receiver -->
+                <div class="modal-section-title"><i class="fas fa-map-marker-alt"></i> Receiver</div>
+                <div class="form-row" style="margin-bottom:0">
+                    <div class="fg"><label class="fl">Receiver Name</label><div class="detail-field" id="viewDelCustomer"></div></div>
+                    <div class="fg"><label class="fl">Receiver Phone</label><div class="detail-field" id="viewDelCustomerPhone"></div></div>
                 </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Items</label><div id="viewDelItems"></div></div>
-                    <div class="fg"><label class="fl">Notes</label><div id="viewDelNotes"></div></div>
+                <div class="fg"><label class="fl">Drop-off Address</label><div class="detail-field" id="viewDelDropoff"></div></div>
+
+                <!-- Driver & Notes -->
+                <div class="modal-section-title"><i class="fas fa-truck"></i> Assignment & Notes</div>
+                <div class="form-row" style="margin-bottom:0">
+                    <div class="fg"><label class="fl">Assigned Driver</label><div class="detail-field" id="viewDelDriver"></div></div>
+                    <div class="fg"><label class="fl">Notes</label><div class="detail-field" id="viewDelNotes"></div></div>
                 </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Pickup Address</label><div id="viewDelPickup"></div></div>
-                    <div class="fg"><label class="fl">Drop-off Address</label><div id="viewDelDropoff"></div></div>
-                </div>
-                <div class="form-row">
-                    <div class="fg"><label class="fl">Delivery Fee</label><div id="viewDelFee"></div></div>
-                    <div class="fg"><label class="fl">Notes</label><div id="viewDelNotes"></div></div>
+
+                <!-- Return Info Card (hidden unless returned) -->
+                <div class="return-info-card" id="returnInfoCard" style="display:none">
+                    <div class="return-info-header"><i class="fas fa-undo-alt"></i> Return Details</div>
+                    <div class="return-detail-row">
+                        <div class="return-detail-item">
+                            <label>Returned At</label>
+                            <div class="val" id="viewReturnedTime">—</div>
+                        </div>
+                        <div class="return-detail-item">
+                            <label>Returned By (Driver)</label>
+                            <div class="val" id="viewReturnedDriver">—</div>
+                        </div>
+                    </div>
+                    <div class="return-detail-full">
+                        <label>Return Reason</label>
+                        <div class="val" id="viewReturnReason">—</div>
+                    </div>
+                    <div class="return-detail-full">
+                        <label>Additional Notes</label>
+                        <div class="val" id="viewReturnNotes">—</div>
+                    </div>
+                    <!-- Admin actions on returned delivery -->
+                    <div class="return-admin-actions" id="returnAdminActions">
+                        <button class="btn btn-success btn-sm" onclick="openRedispatchModal(currentViewDelId)"><i class="fas fa-paper-plane"></i> Re-dispatch to Driver</button>
+                        <button class="btn btn-secondary btn-sm" onclick="resetToPending(currentViewDelId)"><i class="fas fa-redo"></i> Reset to Pending</button>
+                        <button class="btn btn-danger btn-sm" onclick="cancelDelivery(currentViewDelId)"><i class="fas fa-times"></i> Cancel</button>
+                    </div>
                 </div>
             </div>
-            <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('viewDelModal')">Close</button></div>
+            <div class="modal-ftr" id="viewDelFtr">
+                <!-- buttons injected by viewDel() -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- MARK AS RETURNED MODAL -->
+    <!-- ====================================================== -->
+    <div class="modal-overlay" id="returnModal">
+        <div class="modal modal-sm">
+            <div class="modal-hdr">
+                <span class="modal-title" style="color:#c07800"><i class="fas fa-undo-alt" style="margin-right:8px"></i>Mark as Returned</span>
+                <button class="modal-close" onclick="closeModal('returnModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-banner danger">
+                    <i class="fas fa-exclamation-triangle confirm-banner-icon" style="color:var(--error-red)"></i>
+                    <div>
+                        <div class="confirm-banner-title" style="color:var(--error-red)">Confirm Return</div>
+                        <div class="confirm-banner-sub" id="returnOrderInfo">This delivery will be marked as returned and the driver will be notified.</div>
+                    </div>
+                </div>
+                <input type="hidden" id="returnDeliveryId">
+                <div class="fg">
+                    <label class="fl">Return Reason <span style="color:var(--error-red)">*</span> <span style="font-weight:400;color:var(--input-gray);text-transform:none">(required)</span></label>
+                    <input type="text" class="fi" id="returnReason" maxlength="100" placeholder="e.g., Customer not home, Wrong address, Refused delivery..." oninput="updateCharCount('returnReason','returnReasonCount',100)">
+                    <div class="char-counter" id="returnReasonCount">0 / 100</div>
+                </div>
+                <div class="fg">
+                    <label class="fl">Additional Notes <span style="font-weight:400;color:var(--input-gray);text-transform:none">(optional, max 500)</span></label>
+                    <textarea class="ft" id="returnNotes" maxlength="500" placeholder="Any further details about the return situation..." style="height:110px" oninput="updateCharCount('returnNotes','returnNotesCount',500)"></textarea>
+                    <div class="char-counter" id="returnNotesCount">0 / 500</div>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn btn-secondary" onclick="closeModal('returnModal')">Cancel</button>
+                <button class="btn btn-danger" id="returnSubmitBtn" onclick="submitReturn()"><i class="fas fa-undo-alt"></i> Confirm Return</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- RE-DISPATCH MODAL -->
+    <!-- ====================================================== -->
+    <div class="modal-overlay" id="redispatchModal">
+        <div class="modal modal-sm">
+            <div class="modal-hdr">
+                <span class="modal-title" style="color:var(--success-green)"><i class="fas fa-paper-plane" style="margin-right:8px"></i>Re-dispatch Delivery</span>
+                <button class="modal-close" onclick="closeModal('redispatchModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-banner warning">
+                    <i class="fas fa-info-circle confirm-banner-icon" style="color:var(--warning-orange)"></i>
+                    <div>
+                        <div class="confirm-banner-title" style="color:#c07800">Re-dispatch Returned Delivery</div>
+                        <div class="confirm-banner-sub" id="redispatchOrderInfo">Select a new driver to re-assign this returned delivery.</div>
+                    </div>
+                </div>
+                <input type="hidden" id="redispatchDeliveryId">
+                <div class="fg">
+                    <label class="fl">Assign New Driver <span style="color:var(--error-red)">*</span></label>
+                    <select class="fs" id="redispatchDriver">
+                        <option value="">Loading drivers...</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label class="fl">Re-dispatch Notes <span style="font-weight:400;color:var(--input-gray);text-transform:none">(optional)</span></label>
+                    <textarea class="ft" id="redispatchNotes" placeholder="Instructions for the new driver..." style="height:90px"></textarea>
+                </div>
+                <div style="background:var(--light-gray);border-radius:10px;padding:12px;font-size:12px;color:var(--medium-gray)">
+                    <i class="fas fa-info-circle" style="color:var(--blue);margin-right:6px"></i>
+                    The delivery status will be changed to <strong>Assigned</strong> and the new driver will receive a notification.
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn btn-secondary" onclick="closeModal('redispatchModal')">Cancel</button>
+                <button class="btn btn-success" id="redispatchSubmitBtn" onclick="submitRedispatch()"><i class="fas fa-paper-plane"></i> Re-dispatch Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- CANCEL DELIVERY CONFIRMATION MODAL -->
+    <!-- ====================================================== -->
+    <div class="modal-overlay" id="cancelDelModal">
+        <div class="modal modal-sm">
+            <div class="modal-hdr">
+                <span class="modal-title" style="color:var(--error-red)"><i class="fas fa-times-circle" style="margin-right:8px"></i>Cancel Delivery</span>
+                <button class="modal-close" onclick="closeModal('cancelDelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-banner danger">
+                    <i class="fas fa-exclamation-triangle confirm-banner-icon" style="color:var(--error-red)"></i>
+                    <div>
+                        <div class="confirm-banner-title" style="color:var(--error-red)">This action cannot be undone</div>
+                        <div class="confirm-banner-sub" id="cancelDelOrderInfo">The delivery will be permanently cancelled.</div>
+                    </div>
+                </div>
+                <input type="hidden" id="cancelDelId">
+                <div class="fg">
+                    <label class="fl">Cancellation Reason <span style="font-weight:400;color:var(--input-gray);text-transform:none">(optional)</span></label>
+                    <textarea class="ft" id="cancelDelReason" placeholder="Reason for cancellation..." style="height:90px"></textarea>
+                </div>
+            </div>
+            <div class="modal-ftr">
+                <button class="btn btn-secondary" onclick="closeModal('cancelDelModal')">Go Back</button>
+                <button class="btn btn-danger" onclick="confirmCancelDelivery()"><i class="fas fa-times"></i> Cancel Delivery</button>
+            </div>
         </div>
     </div>
 
@@ -527,106 +742,403 @@
     const SB_URL='https://xaikxueachrjydabuueb.supabase.co';
     const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaWt4dWVhY2hyanlkYWJ1dWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzkyNjUsImV4cCI6MjA4NjgxNTI2NX0.OmdiEby0PMJ6Bdnk22ilg2VvysfU7SE9JduIJ8gdKQk';
     const sb=window.supabase.createClient(SB_URL,SB_KEY);
-    let sess=null,allDrv=[],allDel=[],drvFilter='all',delFilter='all';
+    let sess=null,allDrv=[],allDel=[],drvFilter='all',delFilter='all',currentViewDelId=null;
 
-    // Driver type info display
-    function updateDriverTypeInfo(type) {
-        const panel = document.getElementById('typeInfoPanel');
-        const titleEl = document.getElementById('typeInfoTitle');
-        const descEl = document.getElementById('typeInfoDesc');
-        
-        if(type === 'permanent') {
-            titleEl.innerHTML = 'Permanent Driver';
-            descEl.innerHTML = 'Full-time driver with commission-based earnings (5% of delivery value). Cannot be changed after creation.';
-            panel.style.borderLeftColor = 'var(--primary-purple)';
-        } else if(type === 'owner') {
-            titleEl.innerHTML = 'Owner Driver';
-            descEl.innerHTML = 'Vehicle owner with per-unit rate earnings (R30 per unit). Cannot be changed after creation.';
-            panel.style.borderLeftColor = 'var(--blue)';
-        } else {
-            titleEl.innerHTML = 'Temporary Driver';
-            descEl.innerHTML = 'Seasonal/contract driver with per-unit rate earnings (R50 per unit). Cannot be changed after creation.';
-            panel.style.borderLeftColor = 'var(--warning-orange)';
-        }
-    }
+    /* ===== DRIVER TYPE INFO ===== */
+    function updateDriverTypeInfo(type){const panel=document.getElementById('typeInfoPanel'),titleEl=document.getElementById('typeInfoTitle'),descEl=document.getElementById('typeInfoDesc');if(type==='permanent'){titleEl.innerHTML='Permanent Driver';descEl.innerHTML='Full-time driver with commission-based earnings (5% of delivery value). Cannot be changed after creation.';panel.style.borderLeftColor='var(--primary-purple)';}else if(type==='owner'){titleEl.innerHTML='Owner Driver';descEl.innerHTML='Vehicle owner with per-unit rate earnings (R30 per unit). Cannot be changed after creation.';panel.style.borderLeftColor='var(--blue)';}else{titleEl.innerHTML='Temporary Driver';descEl.innerHTML='Seasonal/contract driver with per-unit rate earnings (R50 per unit). Cannot be changed after creation.';panel.style.borderLeftColor='var(--warning-orange)';}}
 
-    // AUTH
+    /* ===== CHAR COUNTER ===== */
+    function updateCharCount(inputId,counterId,max){const v=document.getElementById(inputId).value.length,el=document.getElementById(counterId);el.textContent=v+' / '+max;el.className='char-counter';if(v>=max)el.classList.add('danger');else if(v>=max*0.8)el.classList.add('warn');}
+
+    /* ===== AUTH ===== */
     async function handleLogin(e){e.preventDefault();const em=document.getElementById('loginEmail').value,pw=document.getElementById('loginPass').value,btn=document.getElementById('loginBtn'),err=document.getElementById('loginErr');btn.disabled=true;btn.textContent='Signing in...';err.classList.remove('show');try{const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});if(error)throw error;sess=data.session;document.getElementById('loginOverlay').classList.add('hidden');initDash();toast('success','Welcome back, Admin!');}catch(er){err.textContent=er.message||'Invalid credentials';err.classList.add('show');}finally{btn.disabled=false;btn.textContent='Sign In';}}
     async function doLogout(){if(confirm('Log out?')){await sb.auth.signOut();sess=null;document.getElementById('loginOverlay').classList.remove('hidden');toast('info','Logged out');}}
     async function checkSess(){const{data:{session}}=await sb.auth.getSession();if(session){sess=session;document.getElementById('loginOverlay').classList.add('hidden');initDash();}}
 
-    // NAV
-    function go(p){document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));const sec=document.getElementById('pg-'+p),link=document.querySelector(`.sb-link[data-page="${p}"]`);if(sec)sec.classList.add('active');if(link)link.classList.add('active');const t={dashboard:['Dashboard','Overview of operations'],drivers:['Drivers','Manage all drivers'],deliveries:['Deliveries','Track deliveries'],loads:['Create Load','New delivery order'],earnings:['Earnings','Payouts & earnings'],tracking:['Live Tracking','Real-time locations'],temporary:['Temp Drivers','Seasonal workforce'],notifications:['Notifications','Send & manage'],settings:['Settings','Configuration']};const[ti,su]=t[p]||['',''];document.getElementById('pgTitle').textContent=ti;document.getElementById('pgSub').textContent=su;if(p==='drivers')loadDrivers();if(p==='deliveries')loadDeliveries();if(p==='earnings')loadEarnings();if(p==='tracking')loadTracking();if(p==='temporary')loadTemp();if(p==='loads')loadDrvOpts();}
+    /* ===== NAV ===== */
+    function go(p){document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));const sec=document.getElementById('pg-'+p),link=document.querySelector(`.sb-link[data-page="${p}"]`);if(sec)sec.classList.add('active');if(link)link.classList.add('active');const t={dashboard:['Dashboard','Overview of operations'],drivers:['Drivers','Manage all drivers'],deliveries:['Deliveries','Track & manage deliveries'],loads:['Create Load','New delivery order'],earnings:['Earnings','Payouts & earnings'],tracking:['Live Tracking','Real-time locations'],temporary:['Temp Drivers','Seasonal workforce'],notifications:['Notifications','Send & manage'],settings:['Settings','Configuration']};const[ti,su]=t[p]||['',''];document.getElementById('pgTitle').textContent=ti;document.getElementById('pgSub').textContent=su;if(p==='drivers')loadDrivers();if(p==='deliveries')loadDeliveries();if(p==='earnings')loadEarnings();if(p==='tracking')loadTracking();if(p==='temporary')loadTemp();if(p==='loads')loadDrvOpts();}
 
-    // DASH
-    async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending()]);}
-    async function loadStats(){try{const{data:on}=await sb.from('drivers').select('id').eq('online_status','online');document.getElementById('sOnline').textContent=on?.length||0;const{data:act}=await sb.from('deliveries').select('id').in('status',['assigned','in_transit','picked_up','accepted']);document.getElementById('sActive').textContent=act?.length||0;const td=new Date();td.setHours(0,0,0,0);const{data:comp}=await sb.from('deliveries').select('id,delivery_fee').eq('status','delivered').gte('delivered_time',td.toISOString());document.getElementById('sCompleted').textContent=comp?.length||0;const tot=(comp||[]).reduce((s,d)=>s+(d.delivery_fee||0),0);document.getElementById('sEarnings').textContent='R'+tot.toFixed(0);}catch(e){console.error(e);}}
-    async function loadRecent(){try{const{data}=await sb.from('deliveries').select('*,drivers(full_name)').order('created_at',{ascending:false}).limit(5);const tb=document.getElementById('recentDel');if(!data?.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#9A9EA6;padding:30px">No deliveries yet</td></tr>';return;}tb.innerHTML=data.map(d=>`<tr><td style="font-weight:600">${d.order_id||'N/A'}</td><td>${d.drivers?.full_name||'Unassigned'}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td style="font-weight:600">R${(d.delivery_fee||0).toFixed(2)}</td></tr>`).join('');}catch(e){console.error(e);}}
+    /* ===== DASHBOARD ===== */
+    async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending(),loadDashReturns()]);}
+
+    async function loadStats(){try{
+        const{data:on}=await sb.from('drivers').select('id').eq('online_status','online');
+        document.getElementById('sOnline').textContent=on?.length||0;
+        const{data:act}=await sb.from('deliveries').select('id').in('status',['assigned','in_transit','picked_up','accepted']);
+        document.getElementById('sActive').textContent=act?.length||0;
+        const td=new Date();td.setHours(0,0,0,0);
+        const{data:comp}=await sb.from('deliveries').select('id,delivery_fee').eq('status','delivered').gte('delivered_time',td.toISOString());
+        document.getElementById('sCompleted').textContent=comp?.length||0;
+        // Returns today
+        const{data:ret}=await sb.from('deliveries').select('id').eq('status','returned').gte('returned_time',td.toISOString());
+        const retCount=ret?.length||0;
+        document.getElementById('sReturned').textContent=retCount;
+        const chg=document.getElementById('sReturnedChange');
+        if(retCount>0){chg.textContent='⚠ Action Needed';chg.className='stat-change warn';}else{chg.textContent='Today';chg.className='stat-change up';}
+        // Returns badge in sidebar
+        const{data:allRet}=await sb.from('deliveries').select('id').eq('status','returned');
+        const allRetCount=allRet?.length||0;
+        const rb=document.getElementById('returnsBadge');
+        const rfc=document.getElementById('returnFilterCount');
+        if(rfc)rfc.textContent=allRetCount;
+        if(allRetCount>0){rb.textContent=allRetCount;rb.style.display='inline-flex';}else{rb.style.display='none';}
+        document.getElementById('returnsStripCount').textContent=allRetCount;
+    }catch(e){console.error(e);}}
+
+    async function loadRecent(){try{const{data}=await sb.from('deliveries').select('*,drivers(full_name)').order('created_at',{ascending:false}).limit(5);const tb=document.getElementById('recentDel');if(!data?.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#9A9EA6;padding:30px">No deliveries yet</td></tr>';return;}tb.innerHTML=data.map(d=>`<tr><td style="font-weight:600">${d.order_id||'N/A'}</td><td>${d.drivers?.full_name||'Unassigned'}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status.replace('_',' ')}</span></td><td style="font-weight:600">R${(d.delivery_fee||0).toFixed(2)}</td></tr>`).join('');}catch(e){console.error(e);}}
+
     async function loadPending(){try{const{data}=await sb.from('drivers').select('*').eq('status','pending').order('created_at',{ascending:false}).limit(5);document.getElementById('pendBadge').textContent=data?.length||0;const tb=document.getElementById('pendApprovals');if(!data?.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:#9A9EA6;padding:30px">No pending</td></tr>';return;}tb.innerHTML=data.map(d=>`<tr><td><span class="tbl-av">${(d.full_name||'?')[0].toUpperCase()}</span><span class="tbl-name">${d.full_name}</span></td><td><span class="dt-badge dt-${d.driver_type||'permanent'}">${d.driver_type==='owner'?'Owner Driver':(d.driver_type||'permanent')}</span></td><td>${new Date(d.created_at).toLocaleDateString('en-ZA')}</td><td><button class="btn btn-sm btn-success" onclick="approve('${d.id}')"><i class="fas fa-check"></i></button> <button class="btn btn-sm btn-danger" onclick="reject('${d.id}')"><i class="fas fa-times"></i></button></td></tr>`).join('');}catch(e){console.error(e);}}
 
-    // DRIVERS
+    async function loadDashReturns(){try{
+        const{data}=await sb.from('deliveries').select('*,drivers(full_name)').eq('status','returned').order('returned_time',{ascending:false}).limit(5);
+        const alert=document.getElementById('dashReturnsAlert'),tb=document.getElementById('dashReturnsTbl');
+        if(!data?.length){alert.style.display='none';return;}
+        alert.style.display='block';
+        tb.innerHTML=data.map(d=>`<tr>
+            <td style="font-weight:600">${d.order_id||'N/A'}</td>
+            <td>${d.drivers?.full_name||'<span style="color:#9A9EA6">Unassigned</span>'}</td>
+            <td><span style="font-size:12px;color:#c07800">${d.return_reason||'No reason given'}</span></td>
+            <td style="font-size:12px;color:var(--input-gray)">${d.returned_time?new Date(d.returned_time).toLocaleString('en-ZA',{dateStyle:'short',timeStyle:'short'}):'—'}</td>
+            <td style="display:flex;gap:6px;padding:14px 16px">
+                <button class="btn btn-sm btn-success" onclick="openRedispatchModal('${d.id}')"><i class="fas fa-paper-plane"></i> Re-dispatch</button>
+                <button class="btn btn-sm btn-secondary" onclick="viewDel('${d.id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="cancelDelivery('${d.id}')"><i class="fas fa-times"></i></button>
+            </td>
+        </tr>`).join('');
+    }catch(e){console.error(e);}}
+
+    /* ===== DRIVERS ===== */
     async function loadDrivers(){try{const{data,error}=await sb.from('drivers').select('*').order('created_at',{ascending:false});if(error)throw error;allDrv=data||[];renderDrv();}catch(e){console.error(e);}}
-    function renderDrv(){let f=allDrv;if(drvFilter!=='all')f=allDrv.filter(d=>d.status===drvFilter);const tb=document.getElementById('drvTbl');document.getElementById('drvPag').textContent=`Showing ${f.length} driver${f.length!==1?'s':''}`;if(!f.length){tb.innerHTML='编码<td colspan="8" class="empty"><i class="fas fa-users"></i><h3>No Drivers</h3>编码</tr>';return;}tb.innerHTML=f.map(d=>`<tr><td><span class="tbl-av">${(d.full_name||'?')[0].toUpperCase()}</span><div style="display:inline-block;vertical-align:middle"><div class="tbl-name">${d.full_name}</div><div class="tbl-email">${d.license_number||''}</div></div></td><td>${d.phone||''}</td><td><span class="dt-badge dt-${d.driver_type||'permanent'}">${d.driver_type==='owner'?'Owner Driver':(d.driver_type||'permanent')}</span></td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td><span class="on-dot ${d.online_status==='online'?'on':'off'}"></span>${d.online_status||'offline'}</td><td style="font-weight:600">${d.total_deliveries||0}</td><td>⭐ ${(d.rating||0).toFixed(1)}</td><td><button class="btn btn-sm btn-secondary" onclick="editDrv('${d.id}')"><i class="fas fa-edit"></i></button> ${d.status==='pending'?`<button class="btn btn-sm btn-success" onclick="approve('${d.id}')"><i class="fas fa-check"></i></button>`:''}${d.status==='active'?`<button class="btn btn-sm btn-danger" onclick="suspend('${d.id}')"><i class="fas fa-ban"></i></button>`:''}${d.status==='suspended'?`<button class="btn btn-sm btn-success" onclick="reactivate('${d.id}')"><i class="fas fa-undo"></i></button>`:''}</td></tr>`).join('');}
+    function renderDrv(){let f=allDrv;if(drvFilter!=='all')f=allDrv.filter(d=>d.status===drvFilter);const tb=document.getElementById('drvTbl');document.getElementById('drvPag').textContent=`Showing ${f.length} driver${f.length!==1?'s':''}`;if(!f.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="fas fa-users"></i><h3>No Drivers</h3></div></td></tr>';return;}tb.innerHTML=f.map(d=>`<tr><td><span class="tbl-av">${(d.full_name||'?')[0].toUpperCase()}</span><div style="display:inline-block;vertical-align:middle"><div class="tbl-name">${d.full_name}</div><div class="tbl-email">${d.license_number||''}</div></div></td><td>${d.phone||''}</td><td><span class="dt-badge dt-${d.driver_type||'permanent'}">${d.driver_type==='owner'?'Owner Driver':(d.driver_type||'permanent')}</span></td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td><span class="on-dot ${d.online_status==='online'?'on':'off'}"></span>${d.online_status||'offline'}</td><td style="font-weight:600">${d.total_deliveries||0}</td><td>⭐ ${(d.rating||0).toFixed(1)}</td><td><button class="btn btn-sm btn-secondary" onclick="editDrv('${d.id}')"><i class="fas fa-edit"></i></button> ${d.status==='pending'?`<button class="btn btn-sm btn-success" onclick="approve('${d.id}')"><i class="fas fa-check"></i></button>`:''}${d.status==='active'?`<button class="btn btn-sm btn-danger" onclick="suspend('${d.id}')"><i class="fas fa-ban"></i></button>`:''}${d.status==='suspended'?`<button class="btn btn-sm btn-success" onclick="reactivate('${d.id}')"><i class="fas fa-undo"></i></button>`:''}</td></tr>`).join('');}
     function fDrv(f,btn){drvFilter=f;document.querySelectorAll('.df').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderDrv();}
     function openAddDriver(){document.getElementById('drvModalTitle').textContent='Add Driver';document.getElementById('drvForm').reset();document.getElementById('drvEditId').value='';document.getElementById('drvPassGrp').style.display='block';updateDriverTypeInfo('permanent');openModal('drvModal');}
     function editDrv(id){const d=allDrv.find(x=>x.id===id);if(!d)return;document.getElementById('drvModalTitle').textContent='Edit Driver';document.getElementById('drvEditId').value=id;document.getElementById('drvName').value=d.full_name||'';document.getElementById('drvEmail').value='';document.getElementById('drvPhone').value=d.phone||'';document.getElementById('drvIdNumber').value=d.id_number||'';document.getElementById('drvLic').value=d.license_number||'';document.getElementById('drvLicClass').value=d.license_class||'';document.getElementById('drvLicExpiry').value=d.license_expiry||'';document.getElementById('drvLicCountry').value=d.license_country||'South Africa';document.getElementById('drvType').value=d.driver_type||'permanent';updateDriverTypeInfo(d.driver_type||'permanent');document.getElementById('drvVeh').value=d.vehicle_type||'Car';document.getElementById('drvVehicleMake').value=d.vehicle_make||'';document.getElementById('drvVehicleModel').value=d.vehicle_model||'';document.getElementById('drvVehicleReg').value=d.vehicle_registration||'';document.getElementById('drvVehicleYear').value=d.vehicle_year||'';document.getElementById('drvVehicleDesc').value=d.vehicle_description||'';document.getElementById('drvArea').value=d.residential_area||'';document.getElementById('drvStatus').value=d.status||'pending';document.getElementById('drvPassGrp').style.display='none';openModal('drvModal');}
     async function saveDriver(e){e.preventDefault();const eid=document.getElementById('drvEditId').value;const driverData={full_name:document.getElementById('drvName').value,phone:document.getElementById('drvPhone').value,id_number:document.getElementById('drvIdNumber').value,license_number:document.getElementById('drvLic').value,license_class:document.getElementById('drvLicClass').value,license_expiry:document.getElementById('drvLicExpiry').value,license_country:document.getElementById('drvLicCountry').value,driver_type:document.getElementById('drvType').value,vehicle_type:document.getElementById('drvVeh').value,vehicle_make:document.getElementById('drvVehicleMake').value,vehicle_model:document.getElementById('drvVehicleModel').value,vehicle_registration:document.getElementById('drvVehicleReg').value,vehicle_year:document.getElementById('drvVehicleYear').value,vehicle_description:document.getElementById('drvVehicleDesc').value,residential_area:document.getElementById('drvArea').value,status:document.getElementById('drvStatus').value,updated_at:new Date().toISOString()};if(eid){try{const{error}=await sb.from('drivers').update(driverData).eq('id',eid);if(error)throw error;toast('success','Driver updated!');closeModal('drvModal');loadDrivers();loadStats();}catch(er){toast('error',er.message);}}else{const em=document.getElementById('drvEmail').value,pw=document.getElementById('drvPass').value;if(!em||!pw||pw.length<6){toast('error','Email & password (min 6) required');return;}try{const{data:au,error:ae}=await sb.auth.signUp({email:em,password:pw,options:{data:{full_name:driverData.full_name}}});if(ae)throw ae;driverData.user_id=au.user.id;driverData.email=em;const{error:pe}=await sb.from('drivers').insert(driverData);if(pe)throw pe;toast('success','Driver created!');closeModal('drvModal');loadDrivers();loadPending();}catch(er){toast('error',er.message);}}}
-    async function approve(id){if(!confirm('Approve?'))return;try{await sb.from('drivers').update({status:'active',updated_at:new Date().toISOString()}).eq('id',id);toast('success','Approved!');loadDrivers();loadPending();loadStats();}catch(e){toast('error',e.message);}}
-    async function reject(id){if(!confirm('Reject?'))return;try{await sb.from('drivers').update({status:'suspended',updated_at:new Date().toISOString()}).eq('id',id);toast('warning','Rejected');loadDrivers();loadPending();}catch(e){toast('error',e.message);}}
-    async function suspend(id){if(!confirm('Suspend?'))return;try{await sb.from('drivers').update({status:'suspended',online_status:'offline',updated_at:new Date().toISOString()}).eq('id',id);toast('warning','Suspended');loadDrivers();loadStats();}catch(e){toast('error',e.message);}}
-    async function reactivate(id){if(!confirm('Reactivate?'))return;try{await sb.from('drivers').update({status:'active',updated_at:new Date().toISOString()}).eq('id',id);toast('success','Reactivated');loadDrivers();loadStats();}catch(e){toast('error',e.message);}}
+    async function approve(id){if(!confirm('Approve this driver?'))return;try{await sb.from('drivers').update({status:'active',updated_at:new Date().toISOString()}).eq('id',id);toast('success','Driver approved!');loadDrivers();loadPending();loadStats();}catch(e){toast('error',e.message);}}
+    async function reject(id){if(!confirm('Reject this driver?'))return;try{await sb.from('drivers').update({status:'suspended',updated_at:new Date().toISOString()}).eq('id',id);toast('warning','Driver rejected');loadDrivers();loadPending();}catch(e){toast('error',e.message);}}
+    async function suspend(id){if(!confirm('Suspend this driver?'))return;try{await sb.from('drivers').update({status:'suspended',online_status:'offline',updated_at:new Date().toISOString()}).eq('id',id);toast('warning','Driver suspended');loadDrivers();loadStats();}catch(e){toast('error',e.message);}}
+    async function reactivate(id){if(!confirm('Reactivate this driver?'))return;try{await sb.from('drivers').update({status:'active',updated_at:new Date().toISOString()}).eq('id',id);toast('success','Driver reactivated');loadDrivers();loadStats();}catch(e){toast('error',e.message);}}
 
-    // DELIVERIES
-    async function loadDeliveries(){try{const{data,error}=await sb.from('deliveries').select('*,drivers(full_name,driver_type)').order('created_at',{ascending:false});if(error)throw error;allDel=data||[];renderDel();}catch(e){console.error(e);}}
-    function renderDel(){let f=allDel;if(delFilter!=='all')f=allDel.filter(d=>d.status===delFilter);const tb=document.getElementById('delTbl');document.getElementById('delPag').textContent=`Showing ${f.length} deliver${f.length!==1?'ies':'y'}`;if(!f.length){tb.innerHTML='<tr><td colspan="9" class="empty"><i class="fas fa-box-open"></i><h3>No Deliveries</h3></td></tr>';return;}tb.innerHTML=f.map(d=>`<tr><td style="font-weight:600">${d.order_id||'N/A'}</td><td><div>${d.customer_name||'N/A'}</div><div class="tbl-email">${d.customer_phone||''}</div></td><td>${d.drivers?.full_name||'<span style="color:#9A9EA6">Unassigned</span>'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.pickup_address||''}">${d.pickup_address||'N/A'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.delivery_address||''}">${d.delivery_address||'N/A'}</td><td>${d.items_count||0}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td style="font-weight:600">R${(d.delivery_fee||0).toFixed(2)}</td><td>${d.status==='pending'?`<button class="btn btn-sm btn-success" onclick="updDel('${d.id}','assigned')"><i class="fas fa-user-check"></i></button>`:''}<button class="btn btn-sm btn-secondary" onclick="viewDel('${d.id}')"><i class="fas fa-eye"></i></button></td></tr>`).join('');}
-    function fDel(f,btn){delFilter=f;document.querySelectorAll('.dlf').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderDel();}
-    async function updDel(id,st){try{const u={status:st,updated_at:new Date().toISOString()};if(st==='in_transit')u.picked_up_time=new Date().toISOString();if(st==='delivered')u.delivered_time=new Date().toISOString();await sb.from('deliveries').update(u).eq('id',id);toast('success',`Status → ${st}`);loadDeliveries();loadStats();}catch(e){toast('error',e.message);}}
-    function viewDel(id){
-      const d = allDel.find((x) => x.id === id);
-      if (!d) return;
-      document.getElementById('viewDelOrder').textContent = d.order_id || 'N/A';
-      document.getElementById('viewDelSender').textContent = d.sender_name || d.customer_name || 'N/A';
-      document.getElementById('viewDelSenderPhone').textContent = d.sender_phone || d.customer_phone || 'N/A';
-      document.getElementById('viewDelSenderAddress').textContent = d.sender_address || d.pickup_address || 'N/A';
-      document.getElementById('viewDelCustomer').textContent = d.customer_name || 'N/A';
-      document.getElementById('viewDelCustomerPhone').textContent = d.customer_phone || 'N/A';
-      document.getElementById('viewDelDriver').textContent = d.drivers?.full_name || 'Unassigned';
-      document.getElementById('viewDelPickup').textContent = d.pickup_address || 'N/A';
-      document.getElementById('viewDelDropoff').textContent = d.delivery_address || 'N/A';
-      document.getElementById('viewDelItems').textContent = d.items_count || 0;
-      document.getElementById('viewDelStatus').textContent = d.status || 'N/A';
-      document.getElementById('viewDelFee').textContent = `R${(d.delivery_fee || 0).toFixed(2)}`;
-      document.getElementById('viewDelNotes').textContent = d.notes || 'None';
-      openModal('viewDelModal');
+    /* ===== DELIVERIES ===== */
+    async function loadDeliveries(){try{const{data,error}=await sb.from('deliveries').select('*,drivers(full_name,driver_type)').order('created_at',{ascending:false});if(error)throw error;allDel=data||[];renderDel();loadStats();}catch(e){console.error(e);}}
+
+    function renderDel(){
+        let f=allDel;
+        if(delFilter!=='all')f=allDel.filter(d=>d.status===delFilter);
+        const tb=document.getElementById('delTbl');
+        document.getElementById('delPag').textContent=`Showing ${f.length} deliver${f.length!==1?'ies':'y'}`;
+        // Show/hide returns strip
+        const retCount=allDel.filter(d=>d.status==='returned').length;
+        const strip=document.getElementById('returnsStrip');
+        if(delFilter==='returned'&&retCount>0){strip.style.display='flex';}else{strip.style.display='none';}
+        document.getElementById('returnsStripCount').textContent=retCount;
+        const rfc=document.getElementById('returnFilterCount');
+        if(rfc)rfc.textContent=retCount;
+        if(!f.length){
+            const msg=delFilter==='returned'?'<div class="empty"><i class="fas fa-check-circle" style="color:var(--success-green)"></i><h3>No Returns</h3><p>All returned deliveries have been resolved</p></div>':'<div class="empty"><i class="fas fa-box-open"></i><h3>No Deliveries</h3></div>';
+            tb.innerHTML=`<tr><td colspan="9">${msg}</td></tr>`;
+            return;
+        }
+        tb.innerHTML=f.map(d=>{
+            const isReturned=d.status==='returned';
+            const returnReasonTip=isReturned&&d.return_reason?` title="${d.return_reason}"` : '';
+            let actions='';
+            if(d.status==='pending')actions+=`<button class="btn btn-sm btn-success" onclick="updDel('${d.id}','assigned')" title="Mark Assigned"><i class="fas fa-user-check"></i></button> `;
+            if(isReturned){
+                actions+=`<button class="btn btn-sm btn-success" onclick="openRedispatchModal('${d.id}')" title="Re-dispatch"><i class="fas fa-paper-plane"></i></button> `;
+                actions+=`<button class="btn btn-sm btn-secondary" onclick="resetToPending('${d.id}')" title="Reset to Pending"><i class="fas fa-redo"></i></button> `;
+                actions+=`<button class="btn btn-sm btn-danger" onclick="cancelDelivery('${d.id}')" title="Cancel"><i class="fas fa-times"></i></button> `;
+            }
+            actions+=`<button class="btn btn-sm btn-secondary" onclick="viewDel('${d.id}')" title="View Details"><i class="fas fa-eye"></i></button>`;
+            if(d.status==='delivered'){
+                actions+=` <button class="btn btn-sm btn-warning" onclick="openReturnModal('${d.id}')" title="Mark as Returned"><i class="fas fa-undo-alt"></i></button>`;
+            }
+            return `<tr${isReturned?' style="background:rgba(192,120,0,.03)"':''}>
+                <td style="font-weight:600">${d.order_id||'N/A'}${isReturned?`<div style="font-size:10px;color:#c07800;margin-top:2px"><i class="fas fa-undo-alt"></i> ${d.return_reason||'Returned'}</div>`:''}</td>
+                <td><div>${d.customer_name||'N/A'}</div><div class="tbl-email">${d.customer_phone||''}</div></td>
+                <td>${d.drivers?.full_name||'<span style="color:#9A9EA6">Unassigned</span>'}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.pickup_address||''}">${d.pickup_address||'N/A'}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.delivery_address||''}">${d.delivery_address||'N/A'}</td>
+                <td>${d.items_count||0}</td>
+                <td><span class="status s-${d.status}"${returnReasonTip}><span class="dot"></span>${d.status.replace('_',' ')}</span></td>
+                <td style="font-weight:600">R${(d.delivery_fee||0).toFixed(2)}</td>
+                <td style="white-space:nowrap">${actions}</td>
+            </tr>`;
+        }).join('');
     }
 
-    // LOADS
+    function fDel(f,btn){
+        delFilter=f;
+        document.querySelectorAll('.dlf').forEach(b=>b.classList.remove('active'));
+        if(btn)btn.classList.add('active');
+        // Also handle when called programmatically (no btn)
+        if(!btn){const fb=document.querySelector(`.dlf[data-f="${f}"]`);if(fb)fb.classList.add('active');}
+        renderDel();
+    }
+
+    async function updDel(id,st){try{const u={status:st,updated_at:new Date().toISOString()};if(st==='in_transit')u.picked_up_time=new Date().toISOString();if(st==='delivered')u.delivered_time=new Date().toISOString();await sb.from('deliveries').update(u).eq('id',id);toast('success',`Status → ${st.replace('_',' ')}`);loadDeliveries();}catch(e){toast('error',e.message);}}
+
+    function viewDel(id){
+        const d=allDel.find(x=>x.id===id);
+        if(!d)return;
+        currentViewDelId=id;
+
+        // Helper to set detail field
+        const set=(elId,val)=>{const el=document.getElementById(elId);if(!el)return;if(val&&val!=='N/A'&&val!=='None'&&val!=='0'){el.textContent=val;el.className='detail-field';}else{el.textContent=val||'—';el.className='detail-field empty-val';}};
+
+        set('viewDelOrder',d.order_id);
+        set('viewDelFee',`R${(d.delivery_fee||0).toFixed(2)}`);
+        set('viewDelItems',(d.items_count||0)+' item'+(d.items_count!==1?'s':''));
+        set('viewDelSender',d.sender_name||d.customer_name);
+        set('viewDelSenderPhone',d.sender_phone||d.customer_phone);
+        set('viewDelPickup',d.pickup_address);
+        set('viewDelCustomer',d.customer_name);
+        set('viewDelCustomerPhone',d.customer_phone);
+        set('viewDelDropoff',d.delivery_address);
+        set('viewDelDriver',d.drivers?.full_name||'Unassigned');
+        set('viewDelNotes',d.notes||'None');
+
+        // Status badge
+        document.getElementById('viewDelStatus').innerHTML=`<span class="status s-${d.status}"><span class="dot"></span>${d.status.replace('_',' ')}</span>`;
+
+        // Return info
+        const returnCard=document.getElementById('returnInfoCard');
+        if(d.status==='returned'){
+            returnCard.style.display='block';
+            document.getElementById('viewReturnedTime').textContent=d.returned_time?new Date(d.returned_time).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'}):'—';
+            document.getElementById('viewReturnedDriver').textContent=d.drivers?.full_name||'—';
+            document.getElementById('viewReturnReason').textContent=d.return_reason||'Not specified';
+            document.getElementById('viewReturnNotes').textContent=d.return_notes||'No additional notes';
+        }else{
+            returnCard.style.display='none';
+        }
+
+        // Footer buttons
+        const ftr=document.getElementById('viewDelFtr');
+        let btns='<button class="btn btn-secondary" onclick="closeModal(\'viewDelModal\')">Close</button>';
+        if(d.status==='delivered'){
+            btns+=`<button class="btn btn-warning btn-full" style="flex:1;max-width:220px" onclick="closeModal('viewDelModal');openReturnModal('${id}')"><i class="fas fa-undo-alt"></i> Mark as Returned</button>`;
+        }else if(d.status==='returned'){
+            btns+=`<button class="btn btn-success" onclick="closeModal('viewDelModal');openRedispatchModal('${id}')"><i class="fas fa-paper-plane"></i> Re-dispatch</button>`;
+            btns+=`<button class="btn btn-danger" onclick="closeModal('viewDelModal');cancelDelivery('${id}')"><i class="fas fa-times"></i> Cancel</button>`;
+        }else if(d.status==='pending'){
+            btns+=`<button class="btn btn-primary" onclick="updDel('${id}','assigned');closeModal('viewDelModal')"><i class="fas fa-user-check"></i> Assign</button>`;
+        }
+        ftr.innerHTML=btns;
+
+        openModal('viewDelModal');
+    }
+
+    /* ===== MARK AS RETURNED ===== */
+    function openReturnModal(id){
+        const d=allDel.find(x=>x.id===id);
+        if(!d){toast('error','Delivery not found');return;}
+        if(d.status!=='delivered'){toast('error','Only delivered orders can be marked as returned');return;}
+        document.getElementById('returnDeliveryId').value=id;
+        document.getElementById('returnOrderInfo').textContent=`Order ${d.order_id||id} will be marked as returned and the assigned driver will be notified.`;
+        document.getElementById('returnReason').value='';
+        document.getElementById('returnNotes').value='';
+        document.getElementById('returnReasonCount').textContent='0 / 100';
+        document.getElementById('returnNotesCount').textContent='0 / 500';
+        document.getElementById('returnReasonCount').className='char-counter';
+        document.getElementById('returnNotesCount').className='char-counter';
+        openModal('returnModal');
+    }
+
+    async function submitReturn(){
+        const id=document.getElementById('returnDeliveryId').value;
+        const reason=document.getElementById('returnReason').value.trim();
+        const notes=document.getElementById('returnNotes').value.trim();
+        if(!reason){toast('error','A return reason is required');document.getElementById('returnReason').focus();return;}
+        const btn=document.getElementById('returnSubmitBtn');
+        btn.disabled=true;
+        btn.innerHTML='<span class="spinner"></span> Processing...';
+        try{
+            const now=new Date().toISOString();
+            const{error}=await sb.from('deliveries').update({
+                status:'returned',
+                returned_time:now,
+                return_reason:reason,
+                return_notes:notes||null,
+                updated_at:now
+            }).eq('id',id);
+            if(error)throw error;
+            // Notify driver if assigned
+            const d=allDel.find(x=>x.id===id);
+            if(d?.driver_id){
+                await sb.from('notifications').insert({
+                    driver_id:d.driver_id,
+                    type:'delivery_returned',
+                    title:'Delivery Marked as Returned',
+                    message:`Order ${d.order_id||id} has been marked as returned by admin. Reason: ${reason}`,
+                    data:{order_id:d.order_id,return_reason:reason,return_notes:notes,returned_time:now},
+                    is_read:false
+                });
+            }
+            toast('success','Delivery marked as returned');
+            closeModal('returnModal');
+            await loadDeliveries();
+            await loadDashReturns();
+        }catch(e){
+            toast('error',e.message);
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML='<i class="fas fa-undo-alt"></i> Confirm Return';
+        }
+    }
+
+    /* ===== RE-DISPATCH ===== */
+    async function openRedispatchModal(id){
+        const d=allDel.find(x=>x.id===id);
+        if(!d){toast('error','Delivery not found');return;}
+        document.getElementById('redispatchDeliveryId').value=id;
+        document.getElementById('redispatchOrderInfo').textContent=`Re-assigning order ${d.order_id||id} — previously returned: "${d.return_reason||'No reason'}"`;
+        document.getElementById('redispatchNotes').value='';
+        // Load active drivers
+        const sel=document.getElementById('redispatchDriver');
+        sel.innerHTML='<option value="">Loading...</option>';
+        try{
+            const{data}=await sb.from('drivers').select('id,full_name,driver_type,online_status').eq('status','active').order('online_status',{ascending:false}).order('full_name');
+            sel.innerHTML='<option value="">Select a driver *</option>';
+            (data||[]).forEach(drv=>{
+                const online=drv.online_status==='online'?'🟢 ':'⚫ ';
+                sel.innerHTML+=`<option value="${drv.id}">${online}${drv.full_name} (${drv.driver_type==='owner'?'Owner':drv.driver_type})</option>`;
+            });
+        }catch(e){sel.innerHTML='<option value="">Failed to load drivers</option>';}
+        openModal('redispatchModal');
+    }
+
+    async function submitRedispatch(){
+        const id=document.getElementById('redispatchDeliveryId').value;
+        const driverId=document.getElementById('redispatchDriver').value;
+        const notes=document.getElementById('redispatchNotes').value.trim();
+        if(!driverId){toast('error','Please select a driver');return;}
+        const btn=document.getElementById('redispatchSubmitBtn');
+        btn.disabled=true;
+        btn.innerHTML='<span class="spinner"></span> Re-dispatching...';
+        try{
+            const now=new Date().toISOString();
+            const{error}=await sb.from('deliveries').update({
+                status:'assigned',
+                driver_id:driverId,
+                notes:notes?`[Re-dispatched] ${notes}`:undefined,
+                updated_at:now
+            }).eq('id',id);
+            if(error)throw error;
+            // Notify new driver
+            const d=allDel.find(x=>x.id===id);
+            await sb.from('notifications').insert({
+                driver_id:driverId,
+                type:'delivery_request',
+                title:'New Delivery Assigned',
+                message:`Order ${d?.order_id||id} has been assigned to you${notes?'. Note: '+notes:''}. Please pick up from ${d?.pickup_address||'the pickup location'}.`,
+                data:{order_id:d?.order_id,delivery_id:id,redispatched:true},
+                is_read:false
+            });
+            toast('success','Delivery re-dispatched successfully!');
+            closeModal('redispatchModal');
+            await loadDeliveries();
+            await loadDashReturns();
+        }catch(e){
+            toast('error',e.message);
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML='<i class="fas fa-paper-plane"></i> Re-dispatch Now';
+        }
+    }
+
+    /* ===== RESET TO PENDING ===== */
+    async function resetToPending(id){
+        if(!confirm('Reset this delivery to Pending (unassigned)? The current driver will be removed.'))return;
+        try{
+            const now=new Date().toISOString();
+            await sb.from('deliveries').update({status:'pending',driver_id:null,updated_at:now}).eq('id',id);
+            toast('success','Delivery reset to pending');
+            await loadDeliveries();
+            await loadDashReturns();
+        }catch(e){toast('error',e.message);}
+    }
+
+    /* ===== CANCEL DELIVERY ===== */
+    function cancelDelivery(id){
+        const d=allDel.find(x=>x.id===id);
+        if(!d)return;
+        document.getElementById('cancelDelId').value=id;
+        document.getElementById('cancelDelOrderInfo').textContent=`Order ${d.order_id||id} will be permanently cancelled.`;
+        document.getElementById('cancelDelReason').value='';
+        openModal('cancelDelModal');
+    }
+
+    async function confirmCancelDelivery(){
+        const id=document.getElementById('cancelDelId').value;
+        const reason=document.getElementById('cancelDelReason').value.trim();
+        try{
+            const now=new Date().toISOString();
+            await sb.from('deliveries').update({
+                status:'cancelled',
+                cancellation_reason:reason||null,
+                cancelled_time:now,
+                updated_at:now
+            }).eq('id',id);
+            // Notify driver if assigned
+            const d=allDel.find(x=>x.id===id);
+            if(d?.driver_id){
+                await sb.from('notifications').insert({
+                    driver_id:d.driver_id,
+                    type:'delivery_cancelled',
+                    title:'Delivery Cancelled',
+                    message:`Order ${d.order_id||id} has been cancelled by admin.${reason?' Reason: '+reason:''}`,
+                    data:{order_id:d.order_id,reason},
+                    is_read:false
+                });
+            }
+            toast('warning','Delivery cancelled');
+            closeModal('cancelDelModal');
+            closeModal('viewDelModal');
+            await loadDeliveries();
+            await loadDashReturns();
+        }catch(e){toast('error',e.message);}
+    }
+
+    /* ===== BULK RE-DISPATCH ===== */
+    function bulkRedispatch(){toast('info','Select individual deliveries to re-dispatch. Bulk feature coming soon.');}
+    function exportReturns(){
+        const returns=allDel.filter(d=>d.status==='returned');
+        if(!returns.length){toast('warning','No returned deliveries to export');return;}
+        const rows=[['Order ID','Customer','Driver','Return Reason','Return Notes','Returned At'],...returns.map(d=>[d.order_id||'',d.customer_name||'',d.drivers?.full_name||'Unassigned',d.return_reason||'',d.return_notes||'',d.returned_time?new Date(d.returned_time).toLocaleString('en-ZA'):'-'])];
+        const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`returns_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+        toast('success','Returns exported as CSV');
+    }
+
+    /* ===== LOADS ===== */
     async function loadDrvOpts(){try{const{data}=await sb.from('drivers').select('id,full_name,driver_type').eq('status','active').order('full_name');const sel=document.getElementById('lDriver');sel.innerHTML='<option value="">Auto-assign</option>';(data||[]).forEach(d=>{sel.innerHTML+=`<option value="${d.id}">${d.full_name} (${d.driver_type==='owner'?'Owner':d.driver_type})</option>`;});}catch(e){console.error(e);}}
     async function createLoad(e){e.preventDefault();const items=parseInt(document.getElementById('lItems').value),did=document.getElementById('lDriver').value||null,val=parseFloat(document.getElementById('lVal').value)||0;let fee=0,units=Math.ceil(items/2);if(did){const drv=allDrv.find(d=>d.id===did);if(drv){const dt=drv.driver_type||'permanent';if(dt==='permanent')fee=val*0.05;else if(dt==='owner')fee=units*30;else fee=units*50;}}try{await sb.from('deliveries').insert({order_id:document.getElementById('lOrd').value,sender_name:document.getElementById('lSName').value,sender_phone:document.getElementById('lSPhone').value,sender_address:document.getElementById('lPickup').value,customer_name:document.getElementById('lCName').value,customer_phone:document.getElementById('lCPhone').value,pickup_address:document.getElementById('lPickup').value,delivery_address:document.getElementById('lDropoff').value,items_count:items,grouped_units:units,delivery_value:val,delivery_fee:fee,driver_id:did,status:did?'assigned':'pending',notes:document.getElementById('lNotes').value,scheduled_time:document.getElementById('lSched').value||null});toast('success','Delivery created!');document.getElementById('loadForm').reset();loadStats();}catch(e){toast('error',e.message);}}
 
-    // CALC
+    /* ===== CALC ===== */
     function calc(){const t=document.getElementById('cType').value,i=parseInt(document.getElementById('cItems').value)||1,v=parseFloat(document.getElementById('cVal').value)||0,u=Math.ceil(i/2);let e=0,r='';if(t==='permanent'){e=v*0.05;r='5% commission';}else if(t==='owner'){e=u*30;r='R30/unit (Owner Driver)';}else{e=u*50;r='R50/unit';}document.getElementById('cUnits').textContent=u;document.getElementById('cRate').textContent=r;document.getElementById('cEarn').textContent='R'+e.toFixed(2);}
 
-    // EARNINGS
+    /* ===== EARNINGS ===== */
     async function loadEarnings(){try{const{data}=await sb.from('deliveries').select('*,drivers(full_name,driver_type)').eq('status','delivered').order('delivered_time',{ascending:false});const del=data||[],tot=del.reduce((s,d)=>s+(d.delivery_fee||0),0);document.getElementById('eTotal').textContent='R'+tot.toFixed(2);document.getElementById('ePaid').textContent='R'+(tot*.8).toFixed(2);document.getElementById('ePending').textContent='R'+(tot*.2).toFixed(2);const grp={};del.forEach(d=>{const k=d.driver_id||'na';if(!grp[k])grp[k]={name:d.drivers?.full_name||'Unassigned',type:d.drivers?.driver_type||'permanent',del:0,units:0,val:0,earn:0};grp[k].del++;grp[k].units+=(d.grouped_units||1);grp[k].val+=(d.delivery_value||0);grp[k].earn+=(d.delivery_fee||0);});const tb=document.getElementById('earnTbl'),ent=Object.values(grp);if(!ent.length){tb.innerHTML='<tr><td colspan="7" class="empty"><p>No data</p></td></tr>';return;}tb.innerHTML=ent.map(e=>`<tr><td style="font-weight:600">${e.name}</td><td><span class="dt-badge dt-${e.type}">${e.type==='owner'?'Owner Driver':e.type}</span></td><td>${e.del}</td><td>${e.units}</td><td>R${e.val.toFixed(2)}</td><td style="font-weight:700;color:var(--primary-red)">R${e.earn.toFixed(2)}</td><td><span class="status s-active"><span class="dot"></span>Paid</span></td></tr>`).join('');}catch(e){console.error(e);}}
 
-    // TRACKING
+    /* ===== TRACKING ===== */
     async function loadTracking(){try{const{data}=await sb.from('drivers').select('*').eq('online_status','online').order('last_seen',{ascending:false});const c=document.getElementById('onlineList');if(!data?.length){c.innerHTML='<p style="color:var(--input-gray);text-align:center;padding:40px 0">No drivers online</p>';return;}c.innerHTML=data.map(d=>`<div style="display:flex;align-items:center;padding:12px;border-bottom:1px solid #F1F5F5;gap:10px"><span class="tbl-av" style="width:36px;height:36px;font-size:13px;flex-shrink:0">${(d.full_name||'?')[0].toUpperCase()}</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${d.full_name}</div><div style="font-size:11px;color:var(--input-gray)">${d.vehicle_type||'N/A'} • ${d.residential_area||'Unknown'}</div></div><span class="on-dot on"></span></div>`).join('');}catch(e){console.error(e);}}
 
-    // TEMP
-    async function loadTemp(){try{const{data:act}=await sb.from('temporary_activation').select('*').limit(1).maybeSingle();const on=act?.is_active||false;document.getElementById('tempToggle').checked=on;document.getElementById('actStatus').textContent=on?'ACTIVE':'INACTIVE';document.getElementById('actStatus').style.color=on?'var(--success-green)':'var(--error-red)';const{data}=await sb.from('drivers').select('*').eq('driver_type','temporary').order('created_at',{ascending:false});const tb=document.getElementById('tempTbl');if(!data?.length){tb.innerHTML='<tr><td colspan="8" class="empty"><i class="fas fa-user-clock"></i><h3>No Temp Drivers</h3></td></tr>';return;}tb.innerHTML=data.map(d=>`<tr><td><span class="tbl-av">${(d.full_name||'?')[0].toUpperCase()}</span><span class="tbl-name">${d.full_name}</span></td><td>${d.phone||''}</td><td>${d.residential_area||'N/A'}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td><span class="on-dot ${d.online_status==='online'?'on':'off'}"></span>${d.online_status||'offline'}</td><td>${d.total_deliveries||0}</td><td>R${((d.total_deliveries||0)*50).toFixed(0)}</td><td>${d.status==='active'?`<button class="btn btn-sm btn-danger" onclick="suspend('${d.id}')"><i class="fas fa-ban"></i></button>`:`<button class="btn btn-sm btn-success" onclick="approve('${d.id}')"><i class="fas fa-check"></i></button>`}</td></tr>`).join('');}catch(e){console.error(e);}}
+    /* ===== TEMP ===== */
+    async function loadTemp(){try{const{data:act}=await sb.from('temporary_activation').select('*').limit(1).maybeSingle();const on=act?.is_active||false;document.getElementById('tempToggle').checked=on;document.getElementById('actStatus').textContent=on?'ACTIVE':'INACTIVE';document.getElementById('actStatus').style.color=on?'var(--success-green)':'var(--error-red)';const{data}=await sb.from('drivers').select('*').eq('driver_type','temporary').order('created_at',{ascending:false});const tb=document.getElementById('tempTbl');if(!data?.length){tb.innerHTML='<tr><td colspan="8"><div class="empty"><i class="fas fa-user-clock"></i><h3>No Temp Drivers</h3></div></td></tr>';return;}tb.innerHTML=data.map(d=>`<tr><td><span class="tbl-av">${(d.full_name||'?')[0].toUpperCase()}</span><span class="tbl-name">${d.full_name}</span></td><td>${d.phone||''}</td><td>${d.residential_area||'N/A'}</td><td><span class="status s-${d.status}"><span class="dot"></span>${d.status}</span></td><td><span class="on-dot ${d.online_status==='online'?'on':'off'}"></span>${d.online_status||'offline'}</td><td>${d.total_deliveries||0}</td><td>R${((d.total_deliveries||0)*50).toFixed(0)}</td><td>${d.status==='active'?`<button class="btn btn-sm btn-danger" onclick="suspend('${d.id}')"><i class="fas fa-ban"></i></button>`:`<button class="btn btn-sm btn-success" onclick="approve('${d.id}')"><i class="fas fa-check"></i></button>`}</td></tr>`).join('');}catch(e){console.error(e);}}
     async function toggleTemp(on){try{const{data:ex}=await sb.from('temporary_activation').select('id').limit(1).maybeSingle();if(ex){await sb.from('temporary_activation').update({is_active:on,activated_at:on?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq('id',ex.id);}else{await sb.from('temporary_activation').insert({is_active:on,activated_at:on?new Date().toISOString():null});}document.getElementById('actStatus').textContent=on?'ACTIVE':'INACTIVE';document.getElementById('actStatus').style.color=on?'var(--success-green)':'var(--error-red)';toast(on?'success':'warning',on?'Temp hiring activated!':'Temp hiring deactivated');await bulkNotif(on?'temporary':'temporary',on?'activation':'activation',on?'Hiring Activated!':'Hiring Deactivated',on?'Go online to receive requests.':'Temp hiring deactivated.');}catch(e){toast('error',e.message);}}
 
-    // NOTIFICATIONS
+    /* ===== NOTIFICATIONS ===== */
     async function sendNotif(e){e.preventDefault();const target=document.getElementById('nTarget').value,type=document.getElementById('nType').value,title=document.getElementById('nTitle').value,msg=document.getElementById('nMsg').value;await bulkNotif(target,type,title,msg);closeModal('notifModal');}
     async function bulkNotif(target,type,title,msg){try{let q=sb.from('drivers').select('id');if(target==='permanent')q=q.eq('driver_type','permanent');else if(target==='owner')q=q.eq('driver_type','owner');else if(target==='temporary')q=q.eq('driver_type','temporary');else if(target==='online')q=q.eq('online_status','online');const{data:drvs}=await q;if(!drvs?.length){toast('warning','No drivers for target');return;}const notifs=drvs.map(d=>({driver_id:d.id,type,title,message:msg,is_read:false}));await sb.from('notifications').insert(notifs);toast('success',`Sent to ${drvs.length} driver${drvs.length!==1?'s':''}`);}catch(e){toast('error',e.message);}}
 
-    // HELPERS
+    /* ===== HELPERS ===== */
     function openModal(id){document.getElementById(id).classList.add('show');}
     function closeModal(id){document.getElementById(id).classList.remove('show');}
     function toast(type,msg){const icons={success:'<i class="fas fa-check-circle" style="color:var(--success-green)"></i>',error:'<i class="fas fa-exclamation-circle" style="color:var(--error-red)"></i>',warning:'<i class="fas fa-exclamation-triangle" style="color:var(--warning-orange)"></i>',info:'<i class="fas fa-info-circle" style="color:var(--blue)"></i>'};const c=document.getElementById('toastBox'),t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`${icons[type]||icons.info}<span class="toast-msg">${msg}</span><button class="toast-x" onclick="this.parentElement.remove()">&times;</button>`;c.appendChild(t);setTimeout(()=>{if(t.parentElement)t.remove();},5000);}
 
-    calc();checkSess();
+    calc();
+    checkSess();
     </script>
 </body>
 </html>
