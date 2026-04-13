@@ -243,7 +243,24 @@
         .earn-val { font-size:28px; font-weight:700; color:var(--dark-gray); margin-bottom:4px; }
         .earn-label { font-size:12px; font-weight:500; color:var(--input-gray); text-transform:uppercase; }
 
-        /* ===== CHART PLACEHOLDER ===== */
+        /* ===== CHART ===== */
+        .chart-container { position:relative; height:280px; padding:8px 4px 0; }
+        .chart-legend { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+        .chart-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--medium-gray); text-transform:uppercase; letter-spacing:.3px; }
+        .chart-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .chart-loading { height:280px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--input-gray); gap:12px; }
+        .chart-loading i { font-size:28px; opacity:.35; }
+        .chart-loading p { font-size:12px; }
+        .chart-error { height:280px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--input-gray); gap:10px; }
+        .chart-error i { font-size:28px; color:var(--error-red); opacity:.5; }
+        .chart-error p { font-size:12px; }
+        .chart-summary-bar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #F1F5F5; margin-top:8px; }
+        .chart-summary-item { padding:12px 16px; text-align:center; border-right:1px solid #F1F5F5; }
+        .chart-summary-item:last-child { border-right:none; }
+        .chart-summary-val { font-size:20px; font-weight:700; margin-bottom:2px; }
+        .chart-summary-label { font-size:10px; font-weight:600; color:var(--input-gray); text-transform:uppercase; letter-spacing:.4px; }
+
+        /* ===== CHART PLACEHOLDER (kept for fallback) ===== */
         .chart-ph { height:280px; background:linear-gradient(135deg,#FAFBFC,#F1F5F5); border-radius:12px; display:flex; justify-content:center; align-items:center; flex-direction:column; color:var(--input-gray); }
         .chart-ph i { font-size:48px; margin-bottom:12px; opacity:.4; }
 
@@ -292,6 +309,8 @@
             #pg-inventory form > div[style*='display:flex;gap:10px']{flex-direction:column;}
             #pg-loads form > div[style*='display:flex;gap:10px'] .btn,
             #pg-inventory form > div[style*='display:flex;gap:10px'] .btn{width:100%;justify-content:center;}
+            .chart-summary-bar{grid-template-columns:1fr 1fr;}
+            .chart-summary-item:nth-child(2){border-right:none;}
         }
         .load-product-row { grid-template-columns:2fr 1fr auto; }
 
@@ -468,7 +487,57 @@
                 <div class="card-hdr"><span class="card-title" style="color:#c07800"><i class="fas fa-undo-alt" style="margin-right:8px"></i>Returned Deliveries Requiring Attention</span><button class="btn btn-sm btn-warning" onclick="go('deliveries');fDel('returned',null)">View All Returns</button></div>
                 <div class="card-body"><div class="tbl-wrap"><table><thead><th>Order</th><th>Driver</th><th>Return Reason</th><th>Returned At</th><th>Actions</th></thead><tbody id="dashReturnsTbl"></tbody></table></div></div>
             </div>
-            <div class="card"><div class="card-hdr"><span class="card-title">Delivery Trends (Last 7 Days)</span></div><div class="card-body"><div class="chart-ph"><i class="fas fa-chart-line"></i><p>Chart visualization — integrate Chart.js for live data</p></div></div></div>
+
+            <!-- DELIVERY TRENDS CHART -->
+            <div class="card" id="trendChartCard">
+                <div class="card-hdr">
+                    <span class="card-title">Delivery Trends (Last 7 Days)</span>
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div class="chart-legend" id="chartLegend" style="display:none">
+                            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#38AF4B"></span>Delivered</span>
+                            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#EF3E62"></span>Returned</span>
+                            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#9A9EA6"></span>Cancelled</span>
+                            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#3B82F6"></span>Assigned</span>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" id="chartRefreshBtn" onclick="loadDashChart(true)"><i class="fas fa-sync-alt" id="chartRefreshIcon"></i> Refresh</button>
+                    </div>
+                </div>
+                <div class="card-body" style="padding-bottom:0">
+                    <!-- Loading state -->
+                    <div class="chart-loading" id="chartLoading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading delivery trends...</p>
+                    </div>
+                    <!-- Error state -->
+                    <div class="chart-error" id="chartError" style="display:none">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Failed to load chart data. <span style="color:var(--primary-red);cursor:pointer;font-weight:600" onclick="loadDashChart(true)">Retry</span></p>
+                    </div>
+                    <!-- Chart canvas -->
+                    <div class="chart-container" id="chartContainer" style="display:none">
+                        <canvas id="deliveryTrendChart"></canvas>
+                    </div>
+                </div>
+                <!-- Summary bar below chart -->
+                <div class="chart-summary-bar" id="chartSummaryBar" style="display:none">
+                    <div class="chart-summary-item">
+                        <div class="chart-summary-val" id="cSumDelivered" style="color:var(--success-green)">0</div>
+                        <div class="chart-summary-label">Delivered</div>
+                    </div>
+                    <div class="chart-summary-item">
+                        <div class="chart-summary-val" id="cSumReturned" style="color:#c07800">0</div>
+                        <div class="chart-summary-label">Returned</div>
+                    </div>
+                    <div class="chart-summary-item">
+                        <div class="chart-summary-val" id="cSumCancelled" style="color:var(--error-red)">0</div>
+                        <div class="chart-summary-label">Cancelled</div>
+                    </div>
+                    <div class="chart-summary-item">
+                        <div class="chart-summary-val" id="cSumTotal" style="color:var(--dark-gray)">0</div>
+                        <div class="chart-summary-label">Total Orders</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- DRIVERS -->
@@ -614,21 +683,21 @@
                     <button class="btn btn-sm btn-outline" onclick="fitAllMarkers()" title="Fit all markers"><i class="fas fa-compress-arrows-alt"></i> Fit All</button>
                 </div>
             </div>
-                            <!-- Add this right after the top action bar in pg-tracking -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:rgba(59,130,246,.1); padding:10px 15px; border-radius:12px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <i class="fas fa-broadcast-tower" style="color:var(--blue)"></i>
-                        <span style="font-size:12px; font-weight:600;">Live Tracking Status:</span>
-                        <span id="liveStatus" style="font-size:12px; color:var(--success-green);">
-                            <i class="fas fa-circle" style="font-size:8px;"></i> Connected
-                        </span>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-sm btn-primary" onclick="refreshDriverLocations()">
-                            <i class="fas fa-sync-alt"></i> Force Refresh
-                        </button>
-                    </div>
-                </div>  
+            <!-- Add this right after the top action bar in pg-tracking -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:rgba(59,130,246,.1); padding:10px 15px; border-radius:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-broadcast-tower" style="color:var(--blue)"></i>
+                    <span style="font-size:12px; font-weight:600;">Live Tracking Status:</span>
+                    <span id="liveStatus" style="font-size:12px; color:var(--success-green);">
+                        <i class="fas fa-circle" style="font-size:8px;"></i> Connected
+                    </span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-sm btn-primary" onclick="refreshDriverLocations()">
+                        <i class="fas fa-sync-alt"></i> Force Refresh
+                    </button>
+                </div>
+            </div>
             <div class="track-layout">
                 <!-- MAP -->
                 <div class="map-card">
@@ -840,12 +909,279 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 const SB_URL='https://xaikxueachrjydabuueb.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaWt4dWVhY2hyanlkYWJ1dWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzkyNjUsImV4cCI6MjA4NjgxNTI2NX0.OmdiEby0PMJ6Bdnk22ilg2VvysfU7SE9JduIJ8gdKQk';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let sess=null,allDrv=[],allDel=[],drvFilter='all',delFilter='all',currentViewDelId=null;
 let selectedLoadProducts=[];
+
+/* ============================================================
+   DELIVERY TRENDS CHART — CHART.JS
+   ============================================================ */
+let _trendChart = null;
+
+/**
+ * Build an array of the last N ISO date strings (YYYY-MM-DD) up to today.
+ */
+function _lastNDays(n) {
+    const days = [];
+    for (let i = n - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
+    }
+    return days;
+}
+
+/**
+ * Short label for a date string: "Mon 7", "Tue 8", etc.
+ */
+function _shortDateLabel(isoDate) {
+    const d = new Date(isoDate + 'T00:00:00');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    return days[d.getDay()] + ' ' + d.getDate();
+}
+
+async function loadDashChart(forceRefresh) {
+    // Show loading, hide others
+    document.getElementById('chartLoading').style.display = 'flex';
+    document.getElementById('chartError').style.display = 'none';
+    document.getElementById('chartContainer').style.display = 'none';
+    document.getElementById('chartSummaryBar').style.display = 'none';
+    document.getElementById('chartLegend').style.display = 'none';
+
+    // Spin refresh icon if manually triggered
+    if (forceRefresh) {
+        const icon = document.getElementById('chartRefreshIcon');
+        if (icon) icon.classList.add('fa-spin');
+    }
+
+    try {
+        // Fetch 7 days window
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const { data, error } = await sb
+            .from('deliveries')
+            .select('status, created_at, delivered_time, returned_time, cancelled_time')
+            .gte('created_at', sevenDaysAgo.toISOString());
+
+        if (error) throw error;
+
+        const records = data || [];
+        const days = _lastNDays(7);
+
+        // Build per-day buckets
+        const buckets = {};
+        days.forEach(d => {
+            buckets[d] = { delivered: 0, returned: 0, cancelled: 0, assigned: 0, total: 0 };
+        });
+
+        records.forEach(r => {
+            // Use the most relevant timestamp for bucketing
+            let dateStr = null;
+            if (r.status === 'delivered' && r.delivered_time) {
+                dateStr = r.delivered_time.slice(0, 10);
+            } else if (r.status === 'returned' && r.returned_time) {
+                dateStr = r.returned_time.slice(0, 10);
+            } else if (r.status === 'cancelled' && r.cancelled_time) {
+                dateStr = r.cancelled_time.slice(0, 10);
+            } else {
+                dateStr = r.created_at.slice(0, 10);
+            }
+
+            if (buckets[dateStr]) {
+                buckets[dateStr].total++;
+                const s = r.status;
+                if (s === 'delivered') buckets[dateStr].delivered++;
+                else if (s === 'returned') buckets[dateStr].returned++;
+                else if (s === 'cancelled') buckets[dateStr].cancelled++;
+                else if (['assigned', 'in_transit', 'picked_up', 'accepted', 'pending'].includes(s)) buckets[dateStr].assigned++;
+            }
+        });
+
+        const labels = days.map(_shortDateLabel);
+        const deliveredData = days.map(d => buckets[d].delivered);
+        const returnedData  = days.map(d => buckets[d].returned);
+        const cancelledData = days.map(d => buckets[d].cancelled);
+        const assignedData  = days.map(d => buckets[d].assigned);
+
+        // Totals for summary bar
+        const totalDelivered  = deliveredData.reduce((a,b) => a+b, 0);
+        const totalReturned   = returnedData.reduce((a,b) => a+b, 0);
+        const totalCancelled  = cancelledData.reduce((a,b) => a+b, 0);
+        const totalAll        = records.length;
+
+        document.getElementById('cSumDelivered').textContent = totalDelivered;
+        document.getElementById('cSumReturned').textContent  = totalReturned;
+        document.getElementById('cSumCancelled').textContent = totalCancelled;
+        document.getElementById('cSumTotal').textContent     = totalAll;
+
+        // Show chart
+        document.getElementById('chartLoading').style.display = 'none';
+        document.getElementById('chartContainer').style.display = 'block';
+        document.getElementById('chartSummaryBar').style.display = 'grid';
+        document.getElementById('chartLegend').style.display = 'flex';
+
+        // Destroy existing chart instance before re-creating
+        if (_trendChart) {
+            _trendChart.destroy();
+            _trendChart = null;
+        }
+
+        const ctx = document.getElementById('deliveryTrendChart').getContext('2d');
+
+        // Gradient fills
+        const gradGreen = ctx.createLinearGradient(0, 0, 0, 260);
+        gradGreen.addColorStop(0, 'rgba(56,175,75,0.18)');
+        gradGreen.addColorStop(1, 'rgba(56,175,75,0)');
+
+        const gradRed = ctx.createLinearGradient(0, 0, 0, 260);
+        gradRed.addColorStop(0, 'rgba(239,62,98,0.13)');
+        gradRed.addColorStop(1, 'rgba(239,62,98,0)');
+
+        const gradGray = ctx.createLinearGradient(0, 0, 0, 260);
+        gradGray.addColorStop(0, 'rgba(154,158,166,0.12)');
+        gradGray.addColorStop(1, 'rgba(154,158,166,0)');
+
+        const gradBlue = ctx.createLinearGradient(0, 0, 0, 260);
+        gradBlue.addColorStop(0, 'rgba(59,130,246,0.12)');
+        gradBlue.addColorStop(1, 'rgba(59,130,246,0)');
+
+        _trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Delivered',
+                        data: deliveredData,
+                        borderColor: '#38AF4B',
+                        backgroundColor: gradGreen,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#38AF4B',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.42,
+                        fill: true,
+                    },
+                    {
+                        label: 'Returned',
+                        data: returnedData,
+                        borderColor: '#EF3E62',
+                        backgroundColor: gradRed,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#EF3E62',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.42,
+                        fill: true,
+                    },
+                    {
+                        label: 'Cancelled',
+                        data: cancelledData,
+                        borderColor: '#9A9EA6',
+                        backgroundColor: gradGray,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#9A9EA6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.42,
+                        fill: true,
+                        borderDash: [4, 3],
+                    },
+                    {
+                        label: 'Assigned / Active',
+                        data: assignedData,
+                        borderColor: '#3B82F6',
+                        backgroundColor: gradBlue,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#3B82F6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        tension: 0.42,
+                        fill: true,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: false, // We use our custom legend above
+                    },
+                    tooltip: {
+                        backgroundColor: '#fff',
+                        titleColor: '#404040',
+                        bodyColor: '#565656',
+                        borderColor: '#E8ECF0',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 10,
+                        boxPadding: 5,
+                        titleFont: { family: 'Poppins', size: 12, weight: '600' },
+                        bodyFont: { family: 'Poppins', size: 12 },
+                        callbacks: {
+                            title: (items) => items[0]?.label || '',
+                            label: (item) => ` ${item.dataset.label}: ${item.parsed.y}`,
+                        },
+                        usePointStyle: true,
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            font: { family: 'Poppins', size: 11 },
+                            color: '#9A9EA6',
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.04)',
+                            drawBorder: false,
+                        },
+                        border: { display: false, dash: [4, 4] },
+                        ticks: {
+                            font: { family: 'Poppins', size: 11 },
+                            color: '#9A9EA6',
+                            stepSize: 1,
+                            precision: 0,
+                        },
+                    },
+                },
+            }
+        });
+
+    } catch (e) {
+        console.error('Chart load error:', e);
+        document.getElementById('chartLoading').style.display = 'none';
+        document.getElementById('chartError').style.display = 'flex';
+    } finally {
+        if (forceRefresh) {
+            const icon = document.getElementById('chartRefreshIcon');
+            if (icon) setTimeout(() => icon.classList.remove('fa-spin'), 600);
+        }
+    }
+}
 
 /* ============================================================
    LIVE TRACKING — LEAFLET.JS
@@ -995,102 +1331,73 @@ function closeDriverDetail(){
     document.getElementById('tDriverDetail').classList.remove('open');
     document.querySelectorAll('.drv-item').forEach(el=>el.classList.remove('selected'));
 }
+
 function checkDriverGPSStatus(){
     const driversWithGPS = _trackingData.filter(d => d.last_latitude && d.last_longitude);
     const driversWithoutGPS = _trackingData.filter(d => !d.last_latitude || !d.last_longitude);
-    
     console.log(`GPS Status: ${driversWithGPS.length} drivers have GPS, ${driversWithoutGPS.length} drivers don't`);
-    
     if(driversWithoutGPS.length > 0){
         console.log('Drivers without GPS:', driversWithoutGPS.map(d => d.full_name).join(', '));
     }
-    
     return { withGPS: driversWithGPS.length, withoutGPS: driversWithoutGPS.length };
 }
 
-// Function to check which drivers have GPS data
 function checkGPSData() {
     const withGPS = _trackingData.filter(d => d.last_latitude && d.last_longitude);
     const withoutGPS = _trackingData.filter(d => !d.last_latitude || !d.last_longitude);
-    
     console.log(`GPS Summary: ${withGPS.length} drivers have GPS, ${withoutGPS.length} drivers don't`);
-    
     if(withoutGPS.length > 0) {
         console.log('Drivers without GPS:');
         withoutGPS.forEach(d => console.log(`- ${d.full_name}: online_status=${d.online_status}`));
     }
-    
     toast('info', `${withGPS.length} drivers have GPS location, ${withoutGPS.length} don't`);
-    
     return { withGPS, withoutGPS };
 }
-// function focusOnDriver(){
-//     if(!_selectedDrvId){toast('warning','No driver selected');return;}
-//     if(!_markers[_selectedDrvId]){toast('warning','Driver has no GPS location on the map');return;}
-//     _map.flyTo(_markers[_selectedDrvId].getLatLng(),15,{animate:true,duration:1.2});
-//     _markers[_selectedDrvId].openPopup();
-// }// Enhanced focusOnDriver function
+
 function focusOnDriver(){
     if(!_selectedDrvId){
         toast('warning','Please select a driver from the list first');
         return;
     }
-    
     const driver = _trackingData.find(d => d.id === _selectedDrvId);
-    
     if(!driver) {
         toast('warning','Driver not found');
         return;
     }
-    
     if(!driver.last_latitude || !driver.last_longitude) {
         toast('warning',`${driver.full_name || 'Driver'} has no GPS location. They may be offline.`);
         return;
     }
-    
     const lat = parseFloat(driver.last_latitude);
     const lng = parseFloat(driver.last_longitude);
-    
     if(isNaN(lat) || isNaN(lng)) {
         toast('warning','Invalid GPS coordinates');
         return;
     }
-    
-    // Fly to driver location
-    _map.flyTo([lat, lng], 16, {
-        animate: true,
-        duration: 1.5
-    });
-    
-    // Open popup if marker exists
+    _map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
     if(_markers[_selectedDrvId]) {
         _markers[_selectedDrvId].openPopup();
     }
-    
     toast('success',`Focusing on ${driver.full_name || 'driver'}`);
 }
 
-// Add function to show driver trail/route
 let driverTrail = null;
 function showDriverTrail(driverId) {
-    // This would require storing location history
-    // For now, just show current location with circle
     const driver = _trackingData.find(d => d.id === driverId);
     if(driver && driver.last_latitude && driver.last_longitude) {
-        // Add accuracy circle
         if(driverTrail) _map.removeLayer(driverTrail);
         driverTrail = L.circle([driver.last_latitude, driver.last_longitude], {
             color: '#3B82F6',
             fillColor: '#3B82F6',
             fillOpacity: 0.1,
-            radius: 50 // 50 meter accuracy radius
+            radius: 50
         }).addTo(_map);
-        
         setTimeout(() => {
             if(driverTrail) _map.removeLayer(driverTrail);
         }, 3000);
     }
 }
+
 function filterDriverList(q){
     const lq=q.toLowerCase();
     const filtered=lq?_trackingData.filter(d=>
@@ -1111,72 +1418,39 @@ function fitAllMarkers(){
     }catch(e){/*fallback*/}
 }
 
-// async function loadTracking(){
-//     try{
-//         _initMap();
-//         const{data,error}=await sb.from('drivers').select('*').order('online_status',{ascending:false});
-//         if(error)throw error;
-//         _trackingData=data||[];
-//         _updateMarkers(_trackingData);
-//         _updateStats(_trackingData);
-//         const q=document.getElementById('tDriverSearch').value;
-//         filterDriverList(q);
-//         const now=new Date();
-//         document.getElementById('tRefreshTs').textContent='Updated '+now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-//         // Fit on first load
-//         if(!_autoRefreshTimer&&Object.keys(_markers).length)setTimeout(fitAllMarkers,350);
-//     }catch(e){
-//         console.error(e);
-//         toast('error','Failed to load tracking data');
-//     }
-// }// Add these variables at the top with your other declarations
 let _realtimeSubscription = null;
 let _trackingInterval = null;
 
-// Replace your existing loadTracking function with this:
 async function loadTracking(){
     try{
         _initMap();
-        
-        // Initial load of drivers
         await refreshDriverLocations();
-        
-        // Set up real-time subscription for driver location updates
         setupRealtimeTracking();
-        
-        // Also set up periodic polling as backup (every 10 seconds)
         if(_trackingInterval) clearInterval(_trackingInterval);
         _trackingInterval = setInterval(() => {
             if(document.getElementById('pg-tracking').classList.contains('active')) {
                 refreshDriverLocations();
             }
         }, 10000);
-        
     } catch(e){
         console.error(e);
         toast('error','Failed to load tracking data');
     }
 }
 
-// New function to refresh driver locations from database
 async function refreshDriverLocations() {
     try {
         const { data, error } = await sb
             .from('drivers')
             .select('*')
             .order('online_status', { ascending: false });
-            
         if(error) throw error;
-        
-        // Only update if we have new data
         if(data) {
             _trackingData = data;
             _updateMarkers(_trackingData);
             _updateStats(_trackingData);
-            
             const q = document.getElementById('tDriverSearch').value;
             filterDriverList(q);
-            
             const now = new Date();
             document.getElementById('tRefreshTs').textContent = 'Updated ' + now.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
         }
@@ -1185,14 +1459,10 @@ async function refreshDriverLocations() {
     }
 }
 
-// Set up real-time subscription for driver updates
 function setupRealtimeTracking() {
-    // Clean up existing subscription
     if(_realtimeSubscription) {
         sb.removeChannel(_realtimeSubscription);
     }
-    
-    // Subscribe to changes in the drivers table
     _realtimeSubscription = sb
         .channel('driver-location-changes')
         .on(
@@ -1205,7 +1475,6 @@ function setupRealtimeTracking() {
             },
             (payload) => {
                 console.log('Real-time driver update:', payload.new.full_name);
-                // Update the specific driver in our tracking data
                 const updatedDriver = payload.new;
                 const index = _trackingData.findIndex(d => d.id === updatedDriver.id);
                 if(index !== -1) {
@@ -1213,12 +1482,9 @@ function setupRealtimeTracking() {
                 } else {
                     _trackingData.push(updatedDriver);
                 }
-                // Refresh markers with updated data
                 _updateMarkers(_trackingData);
                 _updateStats(_trackingData);
                 filterDriverList(document.getElementById('tDriverSearch').value);
-                
-                // Update timestamp
                 const now = new Date();
                 document.getElementById('tRefreshTs').textContent = 'Live update at ' + now.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             }
@@ -1228,40 +1494,24 @@ function setupRealtimeTracking() {
         });
 }
 
-// Function to simulate driver movement (for testing)
-// Remove this in production - it's just for demonstration
 function simulateDriverMovements() {
     if(!_trackingData) return;
-    
-    // Only simulate for drivers that are online
     const onlineDrivers = _trackingData.filter(d => d.online_status === 'online' && d.id);
-    
     onlineDrivers.forEach(driver => {
-        // Generate random movement within ~100 meters
         if(driver.last_latitude && driver.last_longitude) {
-            const latChange = (Math.random() - 0.5) * 0.001; // ~100m movement
+            const latChange = (Math.random() - 0.5) * 0.001;
             const lngChange = (Math.random() - 0.5) * 0.001;
-            
             const newLat = parseFloat(driver.last_latitude) + latChange;
             const newLng = parseFloat(driver.last_longitude) + lngChange;
-            
-            // Update in database (in production, this would come from the driver's app)
             sb.from('drivers')
-                .update({
-                    last_latitude: newLat,
-                    last_longitude: newLng,
-                    last_seen: new Date().toISOString()
-                })
+                .update({ last_latitude: newLat, last_longitude: newLng, last_seen: new Date().toISOString() })
                 .eq('id', driver.id)
-                .then(() => {
-                    console.log(`Updated ${driver.full_name} position`);
-                })
+                .then(() => { console.log(`Updated ${driver.full_name} position`); })
                 .catch(e => console.error('Error updating position:', e));
         }
     });
 }
 
-// Start/stop simulation (for testing only)
 let simulationInterval = null;
 function startSimulation() {
     if(simulationInterval) clearInterval(simulationInterval);
@@ -1271,13 +1521,13 @@ function startSimulation() {
         }
     }, 5000);
 }
-
 function stopSimulation() {
     if(simulationInterval) {
         clearInterval(simulationInterval);
         simulationInterval = null;
     }
 }
+
 function manualRefresh(){
     const icon=document.getElementById('refreshIcon');
     icon.classList.add('fa-spin');
@@ -1330,7 +1580,7 @@ function go(p){
     closeSidebar();
 }
 
-async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending(),loadDashReturns()]);}
+async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending(),loadDashReturns(),loadDashChart(false)]);}
 
 async function loadStats(){try{
     const{data:on}=await sb.from('drivers').select('id').eq('online_status','online');
