@@ -1212,18 +1212,39 @@ function _drvMapStatus(d){
     return'online';
 }
 
-function _popupHtml(d,ms){
-    const labels={online:'Online',delivering:'Delivering',offline:'Offline'};
-    return`<div class="map-popup">
-        <div class="map-popup-name">${d.full_name||'Unknown'}</div>
-        <div class="map-popup-row"><i class="fas fa-car"></i>${[d.vehicle_make,d.vehicle_model,d.vehicle_type].filter(Boolean).join(' ')||'No vehicle info'}</div>
-        <div class="map-popup-row"><i class="fas fa-phone"></i>${d.phone||'—'}</div>
-        <div class="map-popup-row"><i class="fas fa-map-marker-alt"></i>${d.residential_area||'Unknown area'}</div>
-        <div class="map-popup-row"><i class="fas fa-box"></i>${d.total_deliveries||0} deliveries</div>
+
+ //_popupHtml — now async
+async function _popupHtml(d, ms) {
+    const labels = { online: 'Online', delivering: 'Delivering', offline: 'Offline' };
+    let locationText = d.residential_area || '';
+    
+    // Try to get actual address from current GPS coordinates
+    if (d.last_latitude && d.last_longitude) {
+        try {
+            const address = await reverseGeocode(parseFloat(d.last_latitude), parseFloat(d.last_longitude));
+            if (address && !address.includes(',')) {
+                locationText = address;
+            } else if (address && address.length > 5) {
+                locationText = address;
+            }
+        } catch(e) {
+            locationText = `${d.last_latitude.toFixed(4)}, ${d.last_longitude.toFixed(4)}`;
+        }
+    } else if (!locationText) {
+        locationText = 'Location unknown';
+    }
+    
+    const vehicleInfo = [d.vehicle_make, d.vehicle_model, d.vehicle_type].filter(Boolean).join(' ') || 'No vehicle info';
+    
+    return `<div class="map-popup">
+        <div class="map-popup-name">${d.full_name || 'Unknown'}</div>
+        <div class="map-popup-row"><i class="fas fa-car"></i> ${vehicleInfo}</div>
+        <div class="map-popup-row"><i class="fas fa-phone"></i> ${d.phone || '—'}</div>
+        <div class="map-popup-row"><i class="fas fa-map-marker-alt"></i> ${locationText}</div>
+        <div class="map-popup-row"><i class="fas fa-box"></i> ${d.total_deliveries || 0} deliveries</div>
         <div class="map-popup-status popup-s-${ms}">${labels[ms]}</div>
     </div>`;
 }
-
 function _timeAgo(iso){
     if(!iso)return'—';
     const s=(Date.now()-new Date(iso).getTime())/1000;
@@ -1242,29 +1263,30 @@ function _initMap(){
     setTimeout(()=>_map.invalidateSize(),250);
 }
 
-function _updateMarkers(drivers){
-    const seen=new Set();
-    drivers.forEach(d=>{
-        if(!d.last_latitude||!d.last_longitude)return;
-        const lat=parseFloat(d.last_latitude),lng=parseFloat(d.last_longitude);
-        if(isNaN(lat)||isNaN(lng))return;
+
+// Replace _updateMarkers — await the async popup
+async function _updateMarkers(drivers) {
+    const seen = new Set();
+    for (const d of drivers) {
+        if (!d.last_latitude || !d.last_longitude) continue;
+        const lat = parseFloat(d.last_latitude), lng = parseFloat(d.last_longitude);
+        if (isNaN(lat) || isNaN(lng)) continue;
         seen.add(d.id);
-        const ms=_drvMapStatus(d);
-        const icon=_makeIcon(ms,_initials(d.full_name));
-        const popup=_popupHtml(d,ms);
-        if(_markers[d.id]){
-            _markers[d.id].setLatLng([lat,lng]);
+        const ms = _drvMapStatus(d);
+        const icon = _makeIcon(ms, _initials(d.full_name));
+        const popup = await _popupHtml(d, ms);
+        if (_markers[d.id]) {
+            _markers[d.id].setLatLng([lat, lng]);
             _markers[d.id].setIcon(icon);
             _markers[d.id].getPopup().setContent(popup);
-        }else{
-            const m=L.marker([lat,lng],{icon}).addTo(_map).bindPopup(popup,{maxWidth:230,closeButton:false});
-            m.on('click',()=>_selectDriver(d.id));
-            _markers[d.id]=m;
+        } else {
+            const m = L.marker([lat, lng], { icon }).addTo(_map).bindPopup(popup, { maxWidth: 230, closeButton: false });
+            m.on('click', () => _selectDriver(d.id));
+            _markers[d.id] = m;
         }
-    });
-    // Remove stale
-    Object.keys(_markers).forEach(id=>{
-        if(!seen.has(id)){_map.removeLayer(_markers[id]);delete _markers[id];}
+    }
+    Object.keys(_markers).forEach(id => {
+        if (!seen.has(id)) { _map.removeLayer(_markers[id]); delete _markers[id]; }
     });
 }
 
@@ -1277,6 +1299,92 @@ function _updateStats(drivers){
     document.getElementById('tOffline').textContent=offline;
     document.getElementById('tPanelCount').textContent=drivers.length;
     document.getElementById('tMapSubtitle').textContent=`${Object.keys(_markers).length} driver${Object.keys(_markers).length!==1?'s':''} on map`;
+}
+
+       async function reverseGeocode(lat, lng) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1&extratags=1&namedetails=1`,
+            {
+                headers: {
+                    'Accept-Language': 'en',
+                    'User-Agent': 'NetfloristDriverAdmin/1.0'
+                },
+                signal: controller.signal
+            }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        
+        const json = await res.json();
+        
+        // Build a proper street address
+        const a = json.address || {};
+        
+        // Get house number and street name
+        const houseNumber = a.house_number || a.housenumber || '';
+        const road = a.road || a.street || a.street_name || '';
+        
+        // Build the full street address
+        let streetAddress = '';
+        if (houseNumber && road) {
+            streetAddress = `${houseNumber} ${road}`;
+        } else if (road) {
+            streetAddress = road;
+        } else if (houseNumber) {
+            streetAddress = houseNumber;
+        }
+        
+        // Get suburb/neighborhood
+        const suburb = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
+        
+        // Get city
+        const city = a.city || a.town || a.village || a.municipality || a.state_district || '';
+        
+        // Build the complete address
+        let fullAddress = '';
+        
+        if (streetAddress) {
+            fullAddress = streetAddress;
+            if (suburb) {
+                fullAddress += `, ${suburb}`;
+            } else if (city) {
+                fullAddress += `, ${city}`;
+            }
+        } else if (suburb) {
+            fullAddress = suburb;
+            if (city) fullAddress += `, ${city}`;
+        } else if (city) {
+            fullAddress = city;
+        }
+        
+        // If we have a meaningful address, return it
+        if (fullAddress && fullAddress.length > 3) {
+            return fullAddress;
+        }
+        
+        // Try to use the display name as fallback
+        if (json.display_name) {
+            // Get the first 2-3 parts of the display name
+            const parts = json.display_name.split(',');
+            const shortAddress = parts.slice(0, 3).join(',').trim();
+            if (shortAddress && shortAddress.length > 3) {
+                return shortAddress;
+            }
+        }
+        
+        // Last resort: return coordinates formatted nicely
+        return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        
+    } catch(e) {
+        console.error('Geocode error:', e);
+        return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
 }
 
 function _renderDriverList(drivers){
@@ -1307,23 +1415,46 @@ function _renderDriverList(drivers){
     }).join('');
 }
 
-function _selectDriver(id){
-    _selectedDrvId=id;
-    document.querySelectorAll('.drv-item').forEach(el=>el.classList.remove('selected'));
-    const el=document.getElementById(`dpanel-${id}`);
-    if(el){el.classList.add('selected');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
-    const d=_trackingData.find(x=>x.id===id);
-    if(d){
-        document.getElementById('tDetailName').textContent=d.full_name||'—';
-        document.getElementById('tDetailVehicle').textContent=[d.vehicle_make,d.vehicle_model,d.vehicle_type].filter(Boolean).join(' ')||'—';
-        document.getElementById('tDetailPhone').textContent=d.phone||'—';
-        document.getElementById('tDetailArea').textContent=d.residential_area||'—';
-        document.getElementById('tDetailDeliveries').textContent=d.total_deliveries||0;
-        document.getElementById('tDetailRating').textContent=d.rating?'⭐ '+parseFloat(d.rating).toFixed(1):'—';
-        document.getElementById('tDetailLastSeen').textContent=_timeAgo(d.last_seen);
+
+// Replace _selectDriver — reverse geocode live GPS for the detail panel
+async function _selectDriver(id) {
+    _selectedDrvId = id;
+    document.querySelectorAll('.drv-item').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`dpanel-${id}`);
+    if (el) { el.classList.add('selected'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    const d = _trackingData.find(x => x.id === id);
+    if (d) {
+        document.getElementById('tDetailName').textContent = d.full_name || '—';
+        document.getElementById('tDetailVehicle').textContent = [d.vehicle_make, d.vehicle_model, d.vehicle_type].filter(Boolean).join(' ') || '—';
+        document.getElementById('tDetailPhone').textContent = d.phone || '—';
+        document.getElementById('tDetailDeliveries').textContent = d.total_deliveries || 0;
+        document.getElementById('tDetailRating').textContent = d.rating ? '⭐ ' + parseFloat(d.rating).toFixed(1) : '—';
+        document.getElementById('tDetailLastSeen').textContent = _timeAgo(d.last_seen);
+
+        // Get actual address from coordinates
+        if (d.last_latitude && d.last_longitude) {
+            document.getElementById('tDetailArea').textContent = 'Loading address...';
+            try {
+                const address = await reverseGeocode(parseFloat(d.last_latitude), parseFloat(d.last_longitude));
+                document.getElementById('tDetailArea').textContent = address;
+                
+                // Update the database with the actual address if it's a proper address
+                if (address && !address.includes(',')) {
+                    await sb.from('drivers').update({ residential_area: address }).eq('id', d.id);
+                    // Update local data too
+                    d.residential_area = address;
+                }
+            } catch(err) {
+                console.error('Geocoding failed:', err);
+                document.getElementById('tDetailArea').textContent = `${d.last_latitude.toFixed(4)}, ${d.last_longitude.toFixed(4)}`;
+            }
+        } else {
+            document.getElementById('tDetailArea').textContent = d.residential_area || 'No GPS data';
+        }
+
         document.getElementById('tDriverDetail').classList.add('open');
     }
-    if(_markers[id])_markers[id].openPopup();
+    if (_markers[id]) _markers[id].openPopup();
 }
 
 function closeDriverDetail(){
@@ -1426,12 +1557,17 @@ async function loadTracking(){
         _initMap();
         await refreshDriverLocations();
         setupRealtimeTracking();
-        if(_trackingInterval) clearInterval(_trackingInterval);
+        // if(_trackingInterval) clearInterval(_trackingInterval);
+        // _trackingInterval = setInterval(() => {
+        //     if(document.getElementById('pg-tracking').classList.contains('active')) {
+        //         refreshDriverLocations();
+        //     }
+        // }, 10000);
         _trackingInterval = setInterval(() => {
-            if(document.getElementById('pg-tracking').classList.contains('active')) {
-                refreshDriverLocations();
-            }
-        }, 10000);
+    if(document.getElementById('pg-tracking').classList.contains('active')) {
+        refreshDriverLocations();
+    }
+}, 8000); // Refreshes every 8 seconds (between 5-10 seconds)
     } catch(e){
         console.error(e);
         toast('error','Failed to load tracking data');
