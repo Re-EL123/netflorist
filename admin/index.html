@@ -238,10 +238,103 @@
         .toggle input:checked+.toggle-sl:before { transform:translateX(26px); }
 
         /* ===== EARNINGS ===== */
-        .earn-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
-        .earn-card { background:#fff; border-radius:12px; padding:20px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.06); }
-        .earn-val { font-size:28px; font-weight:700; color:var(--dark-gray); margin-bottom:4px; }
-        .earn-label { font-size:12px; font-weight:500; color:var(--input-gray); text-transform:uppercase; }
+            .payroll-badge {
+            display: inline-flex;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .payroll-badge.paid {
+            background: rgba(56,175,75,.12);
+            color: #38AF4B;
+        }
+        .payroll-badge.pending {
+            background: rgba(245,166,35,.12);
+            color: #F5A623;
+        }
+        .payroll-badge.processing {
+            background: rgba(59,130,246,.12);
+            color: #3B82F6;
+        }
+        .earnings-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .payroll-summary {
+            background: linear-gradient(135deg, #FAFBFC, #FFFFFF);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            border: 1px solid #E8ECF0;
+        }
+        .payroll-total {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .payroll-total-item {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+        .payroll-total-item span:first-child {
+            font-size: 12px;
+            color: #9A9EA6;
+            margin-right: 8px;
+        }
+        .payroll-total-item span:last-child {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-gray);
+        }
+        .receipt-preview {
+            background: #F8F9FA;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 12px;
+            border-left: 3px solid var(--primary-purple);
+        }
+        .receipt-preview p {
+            margin: 6px 0;
+        }
+        .filter-payroll {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .btn-filter {
+            background: var(--light-gray);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-filter.active {
+            background: var(--primary-purple);
+            color: white;
+        }
+        .transaction-id {
+            font-family: monospace;
+            font-size: 11px;
+            color: #9A9EA6;
+            letter-spacing: 0.5px;
+        }
 
         /* ===== CHART ===== */
         .chart-container { position:relative; height:280px; padding:8px 4px 0; }
@@ -655,14 +748,85 @@
         </div>
 
         <!-- EARNINGS -->
-        <div class="page-sec" id="pg-earnings">
-            <div class="earn-grid">
-                <div class="earn-card"><div class="earn-val" id="eTotal">R0</div><div class="earn-label">Total (This Month)</div></div>
-                <div class="earn-card"><div class="earn-val" id="ePaid">R0</div><div class="earn-label">Paid Out</div></div>
-                <div class="earn-card"><div class="earn-val" id="ePending">R0</div><div class="earn-label">Pending</div></div>
-            </div>
-            <div class="card"><div class="card-hdr"><span class="card-title">Driver Earnings</span><button class="btn btn-sm btn-outline" onclick="toast('info','CSV export coming soon')"><i class="fas fa-download"></i> Export</button></div><div class="card-body" style="padding:0"><div class="tbl-wrap"><table><thead><th>Driver</th><th>Type</th><th>Deliveries</th><th>Units</th><th>Value</th><th>Earnings</th><th>Status</th></thead><tbody id="earnTbl"><tr><td colspan="7" class="empty"><p>Loading...</p></td></tr></tbody></table></div></div></div>
+       <div class="page-sec" id="pg-earnings">
+    <!-- Payroll summary bar -->
+    <div class="payroll-summary">
+        <div class="payroll-total">
+            <div class="payroll-total-item"><span>💰 Total Payable</span><span id="payrollTotalPayable">R0</span></div>
+            <div class="payroll-total-item"><span>✅ Paid This Month</span><span id="payrollPaidThisMonth">R0</span></div>
+            <div class="payroll-total-item"><span>⏳ Pending</span><span id="payrollPendingCount">0</span></div>
         </div>
+        <button class="btn btn-primary btn-sm" onclick="openBulkPayrollModal()"><i class="fas fa-money-bill-wave"></i> Process Payroll</button>
+    </div>
+
+    <div class="card">
+        <div class="card-hdr">
+            <span class="card-title"><i class="fas fa-coins"></i> Driver Earnings & Payroll</span>
+            <div class="filter-payroll">
+                <button class="btn-filter active" data-pf="all" onclick="filterPayroll('all',this)">All</button>
+                <button class="btn-filter" data-pf="pending" onclick="filterPayroll('pending',this)">Pending</button>
+                <button class="btn-filter" data-pf="paid" onclick="filterPayroll('paid',this)">Paid</button>
+                <button class="btn-filter" data-pf="processing" onclick="filterPayroll('processing',this)">Processing</button>
+            </div>
+        </div>
+        <div class="card-body" style="padding:0">
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <th>Driver</th><th>Type</th><th>Deliveries</th><th>Units</th><th>Value (R)</th><th>Earnings (R)</th><th>Payroll Status</th><th>Payment Ref</th><th>Actions</th>
+                    </thead>
+                    <tbody id="earnTbl">
+                        <tr><td colspan="9" class="empty"><p>Loading earnings...</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Payment history card -->
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-hdr"><span class="card-title"><i class="fas fa-history"></i> Payment History</span><button class="btn btn-sm btn-outline" onclick="exportPayments()"><i class="fas fa-download"></i> Export CSV</button></div>
+        <div class="card-body" style="padding:0">
+            <div class="tbl-wrap">
+                <table>
+                    <thead><th>Date</th><th>Driver</th><th>Amount</th><th>Reference</th><th>Method</th><th>Status</th></thead>
+                    <tbody id="paymentHistoryTbl"><tr><td colspan="6" class="empty">No payments recorded</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PAYROLL MODAL (Process Payment) -->
+<div class="modal-overlay" id="payrollModal">
+    <div class="modal modal-sm">
+        <div class="modal-hdr"><span class="modal-title"><i class="fas fa-receipt"></i> Process Driver Payment</span><button class="modal-close" onclick="closeModal('payrollModal')">&times;</button></div>
+        <div class="modal-body">
+            <div class="confirm-banner warning" id="payrollBanner"><i class="fas fa-info-circle"></i><div><div class="confirm-banner-title">Confirm payout</div><div class="confirm-banner-sub">This will mark the selected earnings as paid.</div></div></div>
+            <input type="hidden" id="payrollDriverId">
+            <input type="hidden" id="payrollEarningsId">
+            <div class="fg"><label class="fl">Driver Name</label><div class="detail-field" id="payrollDriverName">—</div></div>
+            <div class="fg"><label class="fl">Total Earnings (R)</label><div class="detail-field" id="payrollAmount" style="font-weight:700;color:var(--primary-red)">R0.00</div></div>
+            <div class="fg"><label class="fl">Payment Method</label><select class="fs" id="paymentMethod"><option value="Bank Transfer">Bank Transfer</option><option value="EFT">EFT</option><option value="Cash">Cash</option><option value="Voucher">Voucher</option></select></div>
+            <div class="fg"><label class="fl">Reference / Notes</label><input type="text" class="fi" id="paymentRef" placeholder="e.g., March payroll, Invoice #..."></div>
+            <div class="receipt-preview" id="receiptPreview"></div>
+        </div>
+        <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('payrollModal')">Cancel</button><button class="btn btn-success" id="confirmPayBtn" onclick="confirmPayout()"><i class="fas fa-check-circle"></i> Confirm & Pay</button></div>
+    </div>
+</div>
+
+<!-- BULK PAYROLL MODAL -->
+<div class="modal-overlay" id="bulkPayrollModal">
+    <div class="modal modal-sm">
+        <div class="modal-hdr"><span class="modal-title"><i class="fas fa-users"></i> Bulk Payroll Processing</span><button class="modal-close" onclick="closeModal('bulkPayrollModal')">&times;</button></div>
+        <div class="modal-body">
+            <div class="confirm-banner info"><i class="fas fa-chart-line"></i><div><div class="confirm-banner-title">Process all pending earnings</div><div class="confirm-banner-sub">This will mark ALL drivers with "pending" earnings as paid. You can add a global reference.</div></div></div>
+            <div class="fg"><label class="fl">Global Reference (Optional)</label><input type="text" class="fi" id="bulkPaymentRef" placeholder="e.g., Monthly payroll March 2025"></div>
+            <div class="fg"><label class="fl">Payment Method (All)</label><select class="fs" id="bulkPaymentMethod"><option value="Bank Transfer">Bank Transfer</option><option value="EFT">EFT</option><option value="Cash">Cash</option></select></div>
+            <div id="bulkSummary" style="background:#F1F5F5;border-radius:12px;padding:12px;margin-top:12px;font-size:13px;"><span id="bulkCount">0</span> driver(s) will be marked as paid. Total amount: <strong id="bulkTotalAmount">R0</strong></div>
+        </div>
+        <div class="modal-ftr"><button class="btn btn-secondary" onclick="closeModal('bulkPayrollModal')">Cancel</button><button class="btn btn-primary" onclick="processBulkPayroll()"><i class="fas fa-check-double"></i> Process All</button></div>
+    </div>
+</div>
 
         <!-- ===================== LIVE TRACKING ===================== -->
         <div class="page-sec" id="pg-tracking">
@@ -1863,6 +2027,375 @@ async function bulkNotif(target,type,title,msg){try{let q=sb.from('drivers').sel
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 function toast(type,msg){const icons={success:'<i class="fas fa-check-circle" style="color:var(--success-green)"></i>',error:'<i class="fas fa-exclamation-circle" style="color:var(--error-red)"></i>',warning:'<i class="fas fa-exclamation-triangle" style="color:var(--warning-orange)"></i>',info:'<i class="fas fa-info-circle" style="color:var(--blue)"></i>'};const c=document.getElementById('toastBox'),t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`${icons[type]||icons.info}<span class="toast-msg">${msg}</span><button class="toast-x" onclick="this.parentElement.remove()">&times;</button>`;c.appendChild(t);setTimeout(()=>{if(t.parentElement)t.remove();},5000);}
+
+let currentPayrollFilter = 'all';
+let earningsDataForPayroll = [];  // store combined earnings records with driver info
+
+
+
+async function initPayrollTable() {
+    
+    try {
+        const { error } = await sb.from('driver_payouts').select('id').limit(1);
+        if (error && error.message.includes('relation') && error.message.includes('does not exist')) {
+            console.warn("driver_payouts table missing. Payroll will use local storage fallback.");
+            return false;
+        }
+        return true;
+    } catch(e) {
+        console.warn("Payroll table check failed", e);
+        return false;
+    }
+}
+
+async function loadEarningsWithPayroll() {
+    try {
+        // fetch all delivered deliveries with driver info
+        const { data: deliveries, error: delErr } = await sb
+            .from('deliveries')
+            .select('*, drivers:driver_id(full_name, driver_type, id)')
+            .eq('status', 'delivered')
+            .order('delivered_time', { ascending: false });
+        if (delErr) throw delErr;
+        
+        // Aggregate earnings per driver
+        const earningsMap = new Map();
+        (deliveries || []).forEach(d => {
+            const driver = d.drivers;
+            if (!driver) return;
+            const driverId = driver.id;
+            if (!earningsMap.has(driverId)) {
+                earningsMap.set(driverId, {
+                    driver_id: driverId,
+                    driver_name: driver.full_name || 'Unknown',
+                    driver_type: driver.driver_type || 'permanent',
+                    total_deliveries: 0,
+                    total_units: 0,
+                    total_value: 0,
+                    total_earnings: 0,
+                    deliveries_list: []
+                });
+            }
+            const rec = earningsMap.get(driverId);
+            rec.total_deliveries += 1;
+            rec.total_units += (d.grouped_units || Math.ceil((d.items_count || 1)/2));
+            rec.total_value += (d.delivery_value || 0);
+            rec.total_earnings += (d.delivery_fee || 0);
+            rec.deliveries_list.push(d.id);
+        });
+        
+        // Fetch existing payouts from driver_payouts table (or fallback localStorage)
+        let payoutsMap = new Map(); // driver_id -> { status, ref, paid_at, payout_id }
+        let useFallback = false;
+        try {
+            const { data: payouts, error: pErr } = await sb.from('driver_payouts').select('*').order('paid_at', { ascending: false });
+            if (!pErr && payouts) {
+                payouts.forEach(p => {
+                    if (!payoutsMap.has(p.driver_id) || new Date(p.paid_at) > new Date(payoutsMap.get(p.driver_id)?.paid_at || 0)) {
+                        payoutsMap.set(p.driver_id, { status: p.status, reference: p.reference, paid_at: p.paid_at, payout_id: p.id, payment_method: p.payment_method });
+                    }
+                });
+            } else {
+                useFallback = true;
+            }
+        } catch(e) { useFallback = true; }
+        
+        if (useFallback) {
+            // Fallback: use localStorage
+            const stored = localStorage.getItem('netflorist_payouts');
+            if (stored) {
+                const arr = JSON.parse(stored);
+                arr.forEach(p => {
+                    payoutsMap.set(p.driver_id, { status: p.status, reference: p.reference, paid_at: p.paid_at, payout_id: p.id, payment_method: p.payment_method });
+                });
+            }
+        }
+        
+        // Build earnings array with payroll_status
+        const earningsArray = [];
+        for (let [driverId, data] of earningsMap.entries()) {
+            const payout = payoutsMap.get(driverId);
+            let status = 'pending';
+            let paymentRef = '';
+            let paidDate = null;
+            let paymentMethod = '';
+            if (payout) {
+                status = payout.status || 'paid';
+                paymentRef = payout.reference || '';
+                paidDate = payout.paid_at;
+                paymentMethod = payout.payment_method || '';
+            }
+            earningsArray.push({
+                driver_id: driverId,
+                driver_name: data.driver_name,
+                driver_type: data.driver_type,
+                total_deliveries: data.total_deliveries,
+                total_units: data.total_units,
+                total_value: data.total_value,
+                total_earnings: data.total_earnings,
+                payroll_status: status,
+                payment_ref: paymentRef,
+                paid_at: paidDate,
+                payment_method: paymentMethod
+            });
+        }
+        earningsDataForPayroll = earningsArray;
+        renderPayrollTable();
+        updatePayrollSummary();
+        loadPaymentHistory();
+    } catch(e) {
+        console.error(e);
+        document.getElementById('earnTbl').innerHTML = '<tr><td colspan="9" class="empty"><p>Failed to load earnings</p></td></tr>';
+    }
+}
+
+function renderPayrollTable() {
+    let filtered = earningsDataForPayroll;
+    if (currentPayrollFilter !== 'all') {
+        filtered = earningsDataForPayroll.filter(e => e.payroll_status === currentPayrollFilter);
+    }
+    const tbody = document.getElementById('earnTbl');
+    if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty"><p>No earnings data</p></td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map(e => {
+        let statusBadge = '';
+        if (e.payroll_status === 'paid') statusBadge = '<span class="payroll-badge paid"><i class="fas fa-check-circle"></i> Paid</span>';
+        else if (e.payroll_status === 'processing') statusBadge = '<span class="payroll-badge processing"><i class="fas fa-clock"></i> Processing</span>';
+        else statusBadge = '<span class="payroll-badge pending"><i class="fas fa-hourglass-half"></i> Pending</span>';
+        const refDisplay = e.payment_ref ? `<span class="transaction-id">${e.payment_ref.substring(0,12)}</span>` : '—';
+        let actionBtn = '';
+        if (e.payroll_status === 'pending') {
+            actionBtn = `<button class="btn btn-sm btn-success" onclick="openPayrollModal('${e.driver_id}', '${e.driver_name}', ${e.total_earnings})"><i class="fas fa-money-bill-wave"></i> Pay Now</button>`;
+        } else if (e.payroll_status === 'paid') {
+            actionBtn = `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.6"><i class="fas fa-receipt"></i> Paid</button>`;
+        } else {
+            actionBtn = `<button class="btn btn-sm btn-warning" disabled>Processing</button>`;
+        }
+        return `<tr>
+            <td><span class="tbl-name">${escapeHtml(e.driver_name)}</span></td>
+            <td><span class="dt-badge dt-${e.driver_type}">${e.driver_type === 'owner' ? 'Owner Driver' : e.driver_type}</span></td>
+            <td>${e.total_deliveries}</td>
+            <td>${e.total_units}</td>
+            <td>R${e.total_value.toFixed(2)}</td>
+            <td style="font-weight:700;color:var(--primary-red)">R${e.total_earnings.toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td>${refDisplay}</td>
+            <td class="earnings-actions">${actionBtn}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updatePayrollSummary() {
+    const pendingTotal = earningsDataForPayroll.filter(e => e.payroll_status === 'pending').reduce((s,e) => s + e.total_earnings, 0);
+    const paidThisMonth = earningsDataForPayroll.filter(e => e.payroll_status === 'paid' && e.paid_at && new Date(e.paid_at).getMonth() === new Date().getMonth()).reduce((s,e) => s + e.total_earnings, 0);
+    const pendingCount = earningsDataForPayroll.filter(e => e.payroll_status === 'pending').length;
+    document.getElementById('payrollTotalPayable').innerText = 'R' + pendingTotal.toFixed(2);
+    document.getElementById('payrollPaidThisMonth').innerText = 'R' + paidThisMonth.toFixed(2);
+    document.getElementById('payrollPendingCount').innerText = pendingCount;
+}
+
+function filterPayroll(filter, btn) {
+    currentPayrollFilter = filter;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    renderPayrollTable();
+}
+
+function openPayrollModal(driverId, driverName, amount) {
+    document.getElementById('payrollDriverId').value = driverId;
+    document.getElementById('payrollDriverName').innerText = driverName;
+    document.getElementById('payrollAmount').innerText = 'R' + amount.toFixed(2);
+    document.getElementById('paymentRef').value = `Payroll ${new Date().toLocaleDateString('en-ZA')} - ${driverName}`;
+    document.getElementById('paymentMethod').value = 'Bank Transfer';
+    const preview = document.getElementById('receiptPreview');
+    preview.innerHTML = `<p><i class="fas fa-receipt"></i> <strong>Payment receipt preview</strong><br/>Driver: ${escapeHtml(driverName)}<br/>Amount: R${amount.toFixed(2)}<br/>Method: Bank Transfer<br/>Status: will be marked PAID</p>`;
+    openModal('payrollModal');
+}
+
+async function confirmPayout() {
+    const driverId = document.getElementById('payrollDriverId').value;
+    const driverName = document.getElementById('payrollDriverName').innerText;
+    const amountText = document.getElementById('payrollAmount').innerText;
+    const amount = parseFloat(amountText.replace('R',''));
+    const method = document.getElementById('paymentMethod').value;
+    let ref = document.getElementById('paymentRef').value.trim();
+    if (!ref) ref = `PAY-${Date.now()}`;
+    
+    const confirmBtn = document.getElementById('confirmPayBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="spinner"></span> Processing...';
+    
+    try {
+        // Insert into driver_payouts table
+        const payoutRecord = {
+            driver_id: driverId,
+            amount: amount,
+            status: 'paid',
+            reference: ref,
+            payment_method: method,
+            paid_at: new Date().toISOString(),
+            period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+            period_end: new Date().toISOString()
+        };
+        let success = false;
+        try {
+            const { error } = await sb.from('driver_payouts').insert(payoutRecord);
+            if (!error) success = true;
+            else throw new Error(error.message);
+        } catch(dbErr) {
+            // fallback localStorage
+            console.warn('Using localStorage fallback for payout', dbErr);
+            let payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
+            payoutRecord.id = 'local_' + Date.now() + '_' + driverId;
+            payouts.push(payoutRecord);
+            localStorage.setItem('netflorist_payouts', JSON.stringify(payouts));
+            success = true;
+        }
+        if (success) {
+            toast('success', `Payment of R${amount.toFixed(2)} processed for ${driverName}`);
+            closeModal('payrollModal');
+            await loadEarningsWithPayroll(); // refresh table & summary
+            loadPaymentHistory();
+        } else {
+            throw new Error('Could not save payment');
+        }
+    } catch(e) {
+        toast('error', 'Payment failed: ' + e.message);
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm & Pay';
+    }
+}
+
+async function loadPaymentHistory() {
+    let payments = [];
+    try {
+        const { data, error } = await sb.from('driver_payouts').select('*, drivers:driver_id(full_name)').order('paid_at', { ascending: false }).limit(50);
+        if (!error && data) payments = data;
+        else throw new Error('table missing');
+    } catch(e) {
+        // fallback localStorage
+        const stored = localStorage.getItem('netflorist_payouts');
+        if (stored) payments = JSON.parse(stored);
+    }
+    const tbody = document.getElementById('paymentHistoryTbl');
+    if (!payments.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No payment records</td></tr>';
+        return;
+    }
+    // enrich driver names if needed
+    tbody.innerHTML = payments.map(p => {
+        let driverDisplay = p.drivers?.full_name || p.driver_name || 'Unknown';
+        if (!driverDisplay && p.driver_id) driverDisplay = `Driver ${p.driver_id.substring(0,6)}`;
+        return `<tr>
+            <td style="font-size:12px">${new Date(p.paid_at).toLocaleString('en-ZA')}</td>
+            <td>${escapeHtml(driverDisplay)}</td>
+            <td style="font-weight:700;color:var(--primary-red)">R${(p.amount || 0).toFixed(2)}</td>
+            <td><span class="transaction-id">${p.reference || '—'}</span></td>
+            <td>${p.payment_method || 'Bank Transfer'}</td>
+            <td><span class="payroll-badge paid">Completed</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function openBulkPayrollModal() {
+    const pendingDrivers = earningsDataForPayroll.filter(e => e.payroll_status === 'pending');
+    const total = pendingDrivers.reduce((s,e) => s + e.total_earnings, 0);
+    document.getElementById('bulkCount').innerText = pendingDrivers.length;
+    document.getElementById('bulkTotalAmount').innerText = 'R' + total.toFixed(2);
+    if (pendingDrivers.length === 0) {
+        toast('info', 'No pending earnings to process');
+        return;
+    }
+    openModal('bulkPayrollModal');
+}
+
+async function processBulkPayroll() {
+    const pendingItems = earningsDataForPayroll.filter(e => e.payroll_status === 'pending');
+    if (pendingItems.length === 0) { toast('warning', 'Nothing to process'); closeModal('bulkPayrollModal'); return; }
+    const globalRef = document.getElementById('bulkPaymentRef').value.trim() || `Bulk-${new Date().toISOString().slice(0,10)}`;
+    const method = document.getElementById('bulkPaymentMethod').value;
+    const btn = document.querySelector('#bulkPayrollModal .btn-primary');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Processing...';
+    let successCount = 0;
+    for (const item of pendingItems) {
+        try {
+            const payoutRecord = {
+                driver_id: item.driver_id,
+                amount: item.total_earnings,
+                status: 'paid',
+                reference: globalRef,
+                payment_method: method,
+                paid_at: new Date().toISOString(),
+            };
+            let ok = false;
+            try {
+                const { error } = await sb.from('driver_payouts').insert(payoutRecord);
+                if (!error) ok = true;
+                else throw new Error(error.message);
+            } catch(e) {
+                let payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
+                payoutRecord.id = 'bulk_' + Date.now() + '_' + item.driver_id;
+                payouts.push(payoutRecord);
+                localStorage.setItem('netflorist_payouts', JSON.stringify(payouts));
+                ok = true;
+            }
+            if (ok) successCount++;
+        } catch(err) { console.warn(err); }
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-double"></i> Process All';
+    closeModal('bulkPayrollModal');
+    toast('success', `Bulk payroll completed: ${successCount} driver(s) paid.`);
+    await loadEarningsWithPayroll();
+}
+
+function exportPayments() {
+    let payments = [];
+    // try to fetch from supabase or localstorage
+    (async () => {
+        try { const { data } = await sb.from('driver_payouts').select('*, drivers(full_name)'); if(data) payments = data; } catch(e) { const store = localStorage.getItem('netflorist_payouts'); if(store) payments = JSON.parse(store); }
+        if(!payments.length) { toast('info','No payment records to export'); return; }
+        const rows = [['Date','Driver','Amount','Reference','Method','Status']];
+        payments.forEach(p => {
+            rows.push([new Date(p.paid_at).toLocaleString(), p.drivers?.full_name || p.driver_name || p.driver_id, p.amount, p.reference, p.payment_method, 'Paid']);
+        });
+        const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        a.download = `payroll_export_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        toast('success','Payment history exported');
+    })();
+}
+
+function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+// Override the original loadEarnings call in your init.
+// Replace any existing loadEarnings call with loadEarningsWithPayroll inside initDash and when earnings tab is opened.
+// Also attach to go('earnings')
+const originalGo = window.go;
+window.go = function(p) {
+    if(originalGo) originalGo(p);
+    if(p === 'earnings') {
+        loadEarningsWithPayroll();
+    }
+};
+// Also adjust initDash to load earnings with payroll
+const originalInitDash = window.initDash;
+window.initDash = async function() {
+    if(originalInitDash) await originalInitDash();
+    await loadEarningsWithPayroll();
+};
+// patch loadStats maybe not needed.
+// Ensure that when the page loads, earnings table uses new method.
+setTimeout(() => {
+    if(document.getElementById('pg-earnings')) loadEarningsWithPayroll();
+    initPayrollTable();
+}, 300);
 
 calc();
 renderSelectedLoadProducts();
