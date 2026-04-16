@@ -1860,6 +1860,7 @@ async function checkSess(){const{data:{session}}=await sb.auth.getSession();if(s
 function toggleSidebar(){const sb=document.getElementById('sidebar'),bd=document.getElementById('sidebarBackdrop');if(!sb||!bd)return;const open=!sb.classList.contains('open');sb.classList.toggle('open',open);bd.classList.toggle('show',open);}
 function closeSidebar(){const sb=document.getElementById('sidebar'),bd=document.getElementById('sidebarBackdrop');if(sb)sb.classList.remove('open');if(bd)bd.classList.remove('show');}
 
+// Replace the existing go() function with this updated version:
 function go(p){
     document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
@@ -1873,14 +1874,20 @@ function go(p){
     if(p==='drivers')loadDrivers();
     if(p==='deliveries')loadDeliveries();
     if(p==='inventory')loadInventory();
-    if(p==='earnings')loadEarnings();
+    if(p==='earnings')loadEarningsWithPayroll();  // CHANGED: use payroll version
     if(p==='tracking'){loadTracking();_startAutoRefresh();}else{_stopAutoRefresh();}
     if(p==='temporary')loadTemp();
     if(p==='loads'){loadDrvOpts();loadLoadProducts();}
     closeSidebar();
+    if(p === 'earnings') {
+    const now = new Date();
+    const monthName = now.toLocaleString('en-ZA', {month:'long', year:'numeric'});
+    document.getElementById('pgSub').textContent = `Pay period: ${monthName} | Process driver payouts`;
+}
 }
 
-async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending(),loadDashReturns(),loadDashChart(false)]);}
+async function initDash(){await Promise.all([loadStats(),loadRecent(),loadPending(),loadDashReturns(),loadDashChart(false),loadEarningsWithPayroll()]);}
+
 
 async function loadStats(){try{
     const{data:on}=await sb.from('drivers').select('id').eq('online_status','online');
@@ -2050,7 +2057,12 @@ async function initPayrollTable() {
 
 async function loadEarningsWithPayroll() {
     try {
-        // fetch all delivered deliveries with driver info
+        // Get current month boundaries
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        
+        // Fetch all delivered deliveries
         const { data: deliveries, error: delErr } = await sb
             .from('deliveries')
             .select('*, drivers:driver_id(full_name, driver_type, id)')
@@ -2058,91 +2070,120 @@ async function loadEarningsWithPayroll() {
             .order('delivered_time', { ascending: false });
         if (delErr) throw delErr;
         
-        // Aggregate earnings per driver
-        const earningsMap = new Map();
+        // Fetch all payouts
+        let payouts = [];
+        let useFallback = false;
+        try {
+            const { data: p, error: pErr } = await sb.from('driver_payouts').select('*');
+            if (!pErr && p) payouts = p;
+            else useFallback = true;
+        } catch(e) { useFallback = true; }
+        
+        if (useFallback) {
+            const stored = localStorage.getItem('netflorist_payouts');
+            if (stored) payouts = JSON.parse(stored);
+        }
+        
+        // Group deliveries by driver
+        const driverDeliveriesMap = new Map();
+        
         (deliveries || []).forEach(d => {
             const driver = d.drivers;
             if (!driver) return;
             const driverId = driver.id;
-            if (!earningsMap.has(driverId)) {
-                earningsMap.set(driverId, {
+            
+            if (!driverDeliveriesMap.has(driverId)) {
+                driverDeliveriesMap.set(driverId, {
                     driver_id: driverId,
                     driver_name: driver.full_name || 'Unknown',
                     driver_type: driver.driver_type || 'permanent',
-                    total_deliveries: 0,
-                    total_units: 0,
-                    total_value: 0,
-                    total_earnings: 0,
-                    deliveries_list: []
+                    deliveries: []
                 });
             }
-            const rec = earningsMap.get(driverId);
-            rec.total_deliveries += 1;
-            rec.total_units += (d.grouped_units || Math.ceil((d.items_count || 1)/2));
-            rec.total_value += (d.delivery_value || 0);
-            rec.total_earnings += (d.delivery_fee || 0);
-            rec.deliveries_list.push(d.id);
+            driverDeliveriesMap.get(driverId).deliveries.push({
+                id: d.id,
+                fee: d.delivery_fee || 0,
+                value: d.delivery_value || 0,
+                units: d.grouped_units || Math.ceil((d.items_count || 1)/2),
+                delivered_time: d.delivered_time,
+                order_id: d.order_id
+            });
         });
         
-        // Fetch existing payouts from driver_payouts table (or fallback localStorage)
-        let payoutsMap = new Map(); // driver_id -> { status, ref, paid_at, payout_id }
-        let useFallback = false;
-        try {
-            const { data: payouts, error: pErr } = await sb.from('driver_payouts').select('*').order('paid_at', { ascending: false });
-            if (!pErr && payouts) {
-                payouts.forEach(p => {
-                    if (!payoutsMap.has(p.driver_id) || new Date(p.paid_at) > new Date(payoutsMap.get(p.driver_id)?.paid_at || 0)) {
-                        payoutsMap.set(p.driver_id, { status: p.status, reference: p.reference, paid_at: p.paid_at, payout_id: p.id, payment_method: p.payment_method });
-                    }
-                });
-            } else {
-                useFallback = true;
-            }
-        } catch(e) { useFallback = true; }
-        
-        if (useFallback) {
-            // Fallback: use localStorage
-            const stored = localStorage.getItem('netflorist_payouts');
-            if (stored) {
-                const arr = JSON.parse(stored);
-                arr.forEach(p => {
-                    payoutsMap.set(p.driver_id, { status: p.status, reference: p.reference, paid_at: p.paid_at, payout_id: p.id, payment_method: p.payment_method });
-                });
-            }
-        }
-        
-        // Build earnings array with payroll_status
+        // For each driver, calculate pending earnings (deliveries after last payout)
         const earningsArray = [];
-        for (let [driverId, data] of earningsMap.entries()) {
-            const payout = payoutsMap.get(driverId);
-            let status = 'pending';
-            let paymentRef = '';
-            let paidDate = null;
-            let paymentMethod = '';
-            if (payout) {
-                status = payout.status || 'paid';
-                paymentRef = payout.reference || '';
-                paidDate = payout.paid_at;
-                paymentMethod = payout.payment_method || '';
+        
+        for (let [driverId, data] of driverDeliveriesMap.entries()) {
+            // Sort deliveries by date (oldest first to newest)
+            const sortedDeliveries = [...data.deliveries].sort((a, b) => 
+                new Date(a.delivered_time) - new Date(b.delivered_time)
+            );
+            
+            // Find the latest payout for this driver
+            const driverPayouts = payouts.filter(p => p.driver_id === driverId).sort((a, b) => 
+                new Date(b.paid_at) - new Date(a.paid_at)
+            );
+            const lastPayout = driverPayouts[0];
+            
+            let pendingEarnings = 0;
+            let paidEarnings = 0;
+            let pendingDeliveries = [];
+            let paidDeliveries = [];
+            
+            if (!lastPayout) {
+                // No payouts ever - all deliveries are pending
+                pendingEarnings = sortedDeliveries.reduce((sum, d) => sum + d.fee, 0);
+                pendingDeliveries = sortedDeliveries;
+            } else {
+                const lastPayoutDate = new Date(lastPayout.paid_at);
+                // All deliveries AFTER the last payout date are pending
+                for (const delivery of sortedDeliveries) {
+                    const deliveryDate = new Date(delivery.delivered_time);
+                    if (deliveryDate > lastPayoutDate) {
+                        pendingEarnings += delivery.fee;
+                        pendingDeliveries.push(delivery);
+                    } else {
+                        paidEarnings += delivery.fee;
+                        paidDeliveries.push(delivery);
+                    }
+                }
             }
+            
+            const totalEarnings = pendingEarnings + paidEarnings;
+            const totalDeliveries = sortedDeliveries.length;
+            const totalUnits = sortedDeliveries.reduce((sum, d) => sum + d.units, 0);
+            const totalValue = sortedDeliveries.reduce((sum, d) => sum + d.value, 0);
+            
+            // Status: PENDING if there are any deliveries after last payout
+            const status = pendingEarnings > 0 ? 'pending' : 'paid';
+            
             earningsArray.push({
                 driver_id: driverId,
                 driver_name: data.driver_name,
                 driver_type: data.driver_type,
-                total_deliveries: data.total_deliveries,
-                total_units: data.total_units,
-                total_value: data.total_value,
-                total_earnings: data.total_earnings,
+                total_deliveries: totalDeliveries,
+                total_units: totalUnits,
+                total_value: totalValue,
+                total_earnings: totalEarnings,
+                pending_earnings: pendingEarnings,
                 payroll_status: status,
-                payment_ref: paymentRef,
-                paid_at: paidDate,
-                payment_method: paymentMethod
+                payment_ref: lastPayout?.reference || '',
+                paid_at: lastPayout?.paid_at || null,
+                payment_method: lastPayout?.payment_method || '',
+                last_payout_date: lastPayout?.paid_at || null
             });
         }
-        earningsDataForPayroll = earningsArray;
+        
+        // Filter drivers with deliveries
+        const filteredEarnings = earningsArray.filter(e => e.total_deliveries > 0);
+        
+        earningsDataForPayroll = filteredEarnings;
         renderPayrollTable();
         updatePayrollSummary();
         loadPaymentHistory();
+        
+        console.log("Earnings loaded:", earningsDataForPayroll);
+        
     } catch(e) {
         console.error(e);
         document.getElementById('earnTbl').innerHTML = '<tr><td colspan="9" class="empty"><p>Failed to load earnings</p></td></tr>';
@@ -2161,17 +2202,19 @@ function renderPayrollTable() {
     }
     tbody.innerHTML = filtered.map(e => {
         let statusBadge = '';
-        if (e.payroll_status === 'paid') statusBadge = '<span class="payroll-badge paid"><i class="fas fa-check-circle"></i> Paid</span>';
-        else if (e.payroll_status === 'processing') statusBadge = '<span class="payroll-badge processing"><i class="fas fa-clock"></i> Processing</span>';
-        else statusBadge = '<span class="payroll-badge pending"><i class="fas fa-hourglass-half"></i> Pending</span>';
-        const refDisplay = e.payment_ref ? `<span class="transaction-id">${e.payment_ref.substring(0,12)}</span>` : '—';
-        let actionBtn = '';
-        if (e.payroll_status === 'pending') {
-            actionBtn = `<button class="btn btn-sm btn-success" onclick="openPayrollModal('${e.driver_id}', '${e.driver_name}', ${e.total_earnings})"><i class="fas fa-money-bill-wave"></i> Pay Now</button>`;
-        } else if (e.payroll_status === 'paid') {
-            actionBtn = `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.6"><i class="fas fa-receipt"></i> Paid</button>`;
+        if (e.payroll_status === 'paid') {
+            statusBadge = '<span class="payroll-badge paid"><i class="fas fa-check-circle"></i> Paid</span>';
         } else {
-            actionBtn = `<button class="btn btn-sm btn-warning" disabled>Processing</button>`;
+            statusBadge = '<span class="payroll-badge pending"><i class="fas fa-hourglass-half"></i> Pending</span>';
+        }
+        const refDisplay = e.payment_ref ? `<span class="transaction-id">${e.payment_ref.substring(0,15)}</span>` : '—';
+        let actionBtn = '';
+        if (e.payroll_status === 'pending' && e.pending_earnings > 0) {
+            actionBtn = `<button class="btn btn-sm btn-success" onclick="openPayrollModal('${e.driver_id}', '${e.driver_name}', ${e.pending_earnings})"><i class="fas fa-money-bill-wave"></i> Pay Now (R${e.pending_earnings.toFixed(2)})</button>`;
+        } else if (e.payroll_status === 'paid') {
+            actionBtn = `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.6"><i class="fas fa-check-circle"></i> Paid</button>`;
+        } else {
+            actionBtn = `<button class="btn btn-sm btn-warning" disabled>No pending</button>`;
         }
         return `<tr>
             <td><span class="tbl-name">${escapeHtml(e.driver_name)}</span></td>
@@ -2179,13 +2222,14 @@ function renderPayrollTable() {
             <td>${e.total_deliveries}</td>
             <td>${e.total_units}</td>
             <td>R${e.total_value.toFixed(2)}</td>
-            <td style="font-weight:700;color:var(--primary-red)">R${e.total_earnings.toFixed(2)}</td>
+            <td style="font-weight:700;color:var(--primary-red)">R${e.total_earnings.toFixed(2)}<br><small style="font-size:10px;color:var(--input-gray)">Pending: R${e.pending_earnings.toFixed(2)}</small></td>
             <td>${statusBadge}</td>
             <td>${refDisplay}</td>
             <td class="earnings-actions">${actionBtn}</td>
         </tr>`;
     }).join('');
 }
+
 
 function updatePayrollSummary() {
     const pendingTotal = earningsDataForPayroll.filter(e => e.payroll_status === 'pending').reduce((s,e) => s + e.total_earnings, 0);
@@ -2221,31 +2265,36 @@ async function confirmPayout() {
     const amount = parseFloat(amountText.replace('R',''));
     const method = document.getElementById('paymentMethod').value;
     let ref = document.getElementById('paymentRef').value.trim();
-    if (!ref) ref = `PAY-${Date.now()}`;
+    if (!ref) ref = `PAYROLL-${new Date().toISOString().slice(0,10)}`;
     
     const confirmBtn = document.getElementById('confirmPayBtn');
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<span class="spinner"></span> Processing...';
     
+    // Get current month period
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    
     try {
-        // Insert into driver_payouts table
         const payoutRecord = {
             driver_id: driverId,
+            driver_name: driverName,  // ADD THIS - store driver name directly
             amount: amount,
             status: 'paid',
             reference: ref,
             payment_method: method,
             paid_at: new Date().toISOString(),
-            period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
-            period_end: new Date().toISOString()
+            period_start: periodStart,
+            period_end: periodEnd
         };
+        
         let success = false;
         try {
             const { error } = await sb.from('driver_payouts').insert(payoutRecord);
             if (!error) success = true;
             else throw new Error(error.message);
         } catch(dbErr) {
-            // fallback localStorage
             console.warn('Using localStorage fallback for payout', dbErr);
             let payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
             payoutRecord.id = 'local_' + Date.now() + '_' + driverId;
@@ -2253,10 +2302,11 @@ async function confirmPayout() {
             localStorage.setItem('netflorist_payouts', JSON.stringify(payouts));
             success = true;
         }
+        
         if (success) {
-            toast('success', `Payment of R${amount.toFixed(2)} processed for ${driverName}`);
+            toast('success', `Payment of R${amount.toFixed(2)} processed for ${driverName} (${now.toLocaleString('en-ZA', {month:'long', year:'numeric'})})`);
             closeModal('payrollModal');
-            await loadEarningsWithPayroll(); // refresh table & summary
+            await loadEarningsWithPayroll();
             loadPaymentHistory();
         } else {
             throw new Error('Could not save payment');
@@ -2272,33 +2322,56 @@ async function confirmPayout() {
 async function loadPaymentHistory() {
     let payments = [];
     try {
-        const { data, error } = await sb.from('driver_payouts').select('*, drivers:driver_id(full_name)').order('paid_at', { ascending: false }).limit(50);
-        if (!error && data) payments = data;
-        else throw new Error('table missing');
+        // First try to get payouts with the driver_name field (which we now store)
+        const { data, error } = await sb
+            .from('driver_payouts')
+            .select('*')
+            .order('paid_at', { ascending: false })
+            .limit(50);
+        
+        if (!error && data) {
+            payments = data;
+        } else {
+            throw new Error('table fetch failed');
+        }
     } catch(e) {
-        // fallback localStorage
+        console.warn('Error fetching payouts:', e);
+        // Fallback: localStorage
         const stored = localStorage.getItem('netflorist_payouts');
-        if (stored) payments = JSON.parse(stored);
+        if (stored) {
+            payments = JSON.parse(stored);
+        }
     }
+    
     const tbody = document.getElementById('paymentHistoryTbl');
     if (!payments.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty">No payment records</td></tr>';
         return;
     }
-    // enrich driver names if needed
+    
+    // Display payment history with driver names from the stored field
     tbody.innerHTML = payments.map(p => {
-        let driverDisplay = p.drivers?.full_name || p.driver_name || 'Unknown';
-        if (!driverDisplay && p.driver_id) driverDisplay = `Driver ${p.driver_id.substring(0,6)}`;
+        // Get driver name from the driver_name field (now stored directly)
+        let driverDisplay = p.driver_name || 'Unknown';
+        
+        // Fallback to joining with drivers table if driver_name is missing
+        if (driverDisplay === 'Unknown' && p.driver_id) {
+            // Try to get from local allDrv array if available
+            const driver = allDrv?.find(d => d.id === p.driver_id);
+            if (driver) driverDisplay = driver.full_name;
+        }
+        
         return `<tr>
-            <td style="font-size:12px">${new Date(p.paid_at).toLocaleString('en-ZA')}</td>
-            <td>${escapeHtml(driverDisplay)}</td>
+            <td style="font-size:12px; white-space:nowrap">${new Date(p.paid_at).toLocaleString('en-ZA')}</td>
+            <td style="font-weight:600">${escapeHtml(driverDisplay)}</td>
             <td style="font-weight:700;color:var(--primary-red)">R${(p.amount || 0).toFixed(2)}</td>
-            <td><span class="transaction-id">${p.reference || '—'}</span></td>
+            <td><span class="transaction-id" title="${p.reference || '—'}">${p.reference ? p.reference.substring(0,20) + (p.reference.length > 20 ? '...' : '') : '—'}</span></td>
             <td>${p.payment_method || 'Bank Transfer'}</td>
             <td><span class="payroll-badge paid">Completed</span></td>
         </tr>`;
     }).join('');
 }
+
 
 function openBulkPayrollModal() {
     const pendingDrivers = earningsDataForPayroll.filter(e => e.payroll_status === 'pending');
@@ -2317,6 +2390,12 @@ async function processBulkPayroll() {
     if (pendingItems.length === 0) { toast('warning', 'Nothing to process'); closeModal('bulkPayrollModal'); return; }
     const globalRef = document.getElementById('bulkPaymentRef').value.trim() || `Bulk-${new Date().toISOString().slice(0,10)}`;
     const method = document.getElementById('bulkPaymentMethod').value;
+    
+    // Get current period
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    
     const btn = document.querySelector('#bulkPayrollModal .btn-primary');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Processing...';
@@ -2330,6 +2409,8 @@ async function processBulkPayroll() {
                 reference: globalRef,
                 payment_method: method,
                 paid_at: new Date().toISOString(),
+                period_start: periodStart,
+                period_end: periodEnd
             };
             let ok = false;
             try {
@@ -2349,7 +2430,7 @@ async function processBulkPayroll() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-check-double"></i> Process All';
     closeModal('bulkPayrollModal');
-    toast('success', `Bulk payroll completed: ${successCount} driver(s) paid.`);
+    toast('success', `Bulk payroll completed: ${successCount} driver(s) paid for ${new Date().toLocaleString('en-ZA', {month:'long', year:'numeric'})}.`);
     await loadEarningsWithPayroll();
 }
 
