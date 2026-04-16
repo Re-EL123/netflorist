@@ -847,6 +847,53 @@
                     <button class="btn btn-sm btn-outline" onclick="fitAllMarkers()" title="Fit all markers"><i class="fas fa-compress-arrows-alt"></i> Fit All</button>
                 </div>
             </div>
+
+    
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:rgba(59,130,246,.1); padding:10px 15px; border-radius:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fas fa-broadcast-tower" style="color:var(--blue)"></i>
+                        <span style="font-size:12px; font-weight:600;">Live Tracking Status:</span>
+                        <span id="liveStatus" style="font-size:12px; color:var(--success-green);">
+                            <i class="fas fa-circle" style="font-size:8px;"></i> Connected
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-sm btn-primary" onclick="refreshDriverLocations()">
+                            <i class="fas fa-sync-alt"></i> Force Refresh
+                        </button>
+                    </div>
+                </div> 
+                <div class="card" style="margin-top:24px">
+  <div class="card-hdr">
+    <span class="card-title"><i class="fas fa-history" style="color:var(--primary-red);margin-right:8px"></i>Driver Status History</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select class="fs" id="histDriverFilter" onchange="loadStatusHistory()" style="height:36px;width:200px">
+        <option value="">All Drivers</option>
+      </select>
+      <button class="btn btn-sm btn-secondary" onclick="loadStatusHistory()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <th>Driver</th>
+          <th>Status Change</th>
+          <th>Reason</th>
+          <th>Time</th>
+          <th>Duration Online</th>
+          <th>Location</th>
+        </thead>
+        <tbody id="statusHistoryTbl">
+          <tr><td colspan="6" class="empty"><p>Select a driver or load all history</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> 
+      
             <!-- Add this right after the top action bar in pg-tracking -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:rgba(59,130,246,.1); padding:10px 15px; border-radius:12px;">
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -904,13 +951,21 @@
                             <div class="drv-detail-cell"><div class="drv-detail-cell-label">Rating</div><div class="drv-detail-cell-val" id="tDetailRating">—</div></div>
                             <div class="drv-detail-cell"><div class="drv-detail-cell-label">Last Seen</div><div class="drv-detail-cell-val" id="tDetailLastSeen">—</div></div>
                         </div>
-                        <div class="drv-detail-btns">
-                            <button class="btn btn-sm btn-primary" style="flex:1" onclick="focusOnDriver()"><i class="fas fa-crosshairs"></i> Focus</button>
-                            <button class="btn btn-sm btn-secondary" onclick="closeDriverDetail()">Dismiss</button>
-                        </div>
+                       <div class="drv-detail-btns">
+    <button class="btn btn-sm btn-primary" style="flex:1" onclick="focusOnDriver()">
+        <i class="fas fa-crosshairs"></i> Focus
+    </button>
+    <button class="btn btn-sm btn-secondary" onclick="viewDriverStatusHistory(_selectedDrvId)" title="View status history">
+        <i class="fas fa-history"></i>
+    </button>
+    <button class="btn btn-sm btn-secondary" onclick="closeDriverDetail()">
+        Dismiss
+    </button>
+</div>
                     </div>
                 </div>
             </div>
+            
         </div>
 
         <!-- TEMP DRIVERS -->
@@ -1715,11 +1770,22 @@ function fitAllMarkers(){
 
 let _realtimeSubscription = null;
 let _trackingInterval = null;
+let _realtimeDriverSubscription = null;
+let _realtimeStatusLogSubscription = null;
+// Replace your existing loadTracking function with this:
 
 async function loadTracking(){
     try{
         _initMap();
         await refreshDriverLocations();
+
+        
+        // Set up real-time subscription for driver location updates
+        setupRealtimeDriverTracking();
+        
+        // Also set up periodic polling as backup (every 10 seconds)
+        if(_trackingInterval) clearInterval(_trackingInterval);
+
         setupRealtimeTracking();
         // if(_trackingInterval) clearInterval(_trackingInterval);
         // _trackingInterval = setInterval(() => {
@@ -1727,6 +1793,7 @@ async function loadTracking(){
         //         refreshDriverLocations();
         //     }
         // }, 10000);
+
         _trackingInterval = setInterval(() => {
     if(document.getElementById('pg-tracking').classList.contains('active')) {
         refreshDriverLocations();
@@ -1759,41 +1826,226 @@ async function refreshDriverLocations() {
     }
 }
 
-function setupRealtimeTracking() {
-    if(_realtimeSubscription) {
-        sb.removeChannel(_realtimeSubscription);
+// Set up real-time subscription for driver updates
+function setupRealtimeDriverTracking() {
+    // Clean up existing subscriptions before creating new ones
+    if (_realtimeDriverSubscription) {
+        sb.removeChannel(_realtimeDriverSubscription);
     }
-    _realtimeSubscription = sb
-        .channel('driver-location-changes')
+    if (_realtimeStatusLogSubscription) {
+        sb.removeChannel(_realtimeStatusLogSubscription);
+    }
+
+    // Subscribe to driver table updates (location & online status changes)
+    _realtimeDriverSubscription = sb
+        .channel('drivers-tracking-updates')
         .on(
             'postgres_changes',
             {
                 event: 'UPDATE',
                 schema: 'public',
-                table: 'drivers',
-                filter: 'last_latitude=not.is.null&last_longitude=not.is.null'
+                table: 'drivers'
             },
             (payload) => {
+
+                console.log('[TRACKING] Driver update:', payload.new.full_name);
+
                 console.log('Real-time driver update:', payload.new.full_name);
+
                 const updatedDriver = payload.new;
                 const index = _trackingData.findIndex(d => d.id === updatedDriver.id);
-                if(index !== -1) {
+
+                if (index !== -1) {
                     _trackingData[index] = updatedDriver;
                 } else {
                     _trackingData.push(updatedDriver);
                 }
+
+
+                // Refresh map markers, stats, and driver list panel
                 _updateMarkers(_trackingData);
                 _updateStats(_trackingData);
                 filterDriverList(document.getElementById('tDriverSearch').value);
+
+                // Update the last-updated timestamp
+
+                _updateMarkers(_trackingData);
+                _updateStats(_trackingData);
+                filterDriverList(document.getElementById('tDriverSearch').value);
+
                 const now = new Date();
-                document.getElementById('tRefreshTs').textContent = 'Live update at ' + now.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                document.getElementById('tRefreshTs').textContent =
+                    'Live update at ' +
+                    now.toLocaleTimeString('en-ZA', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                    });
             }
         )
         .subscribe((status) => {
-            console.log('Realtime subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+                console.log('[TRACKING] ✅ Subscribed to driver updates');
+            }
+        });
+
+    // Subscribe to driver_status_log table (logs every online/offline change)
+    _realtimeStatusLogSubscription = sb
+        .channel('driver-status-log-updates')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'driver_status_log'
+            },
+            (payload) => {
+                const log = payload.new;
+                const driver = _trackingData.find(d => d.id === log.driver_id);
+
+                if (driver) {
+                    console.log(
+                        '[STATUS_LOG] ' + driver.full_name + ' → ' + log.status.toUpperCase() +
+                        ' (' + log.reason + ')'
+                    );
+                }
+            }
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('[TRACKING] ✅ Subscribed to status logs');
+            }
         });
 }
 
+
+async function viewDriverStatusHistory(driverId) {
+    // Don't run if no driver is selected
+    if (!driverId) {
+        toast('warning', 'Please select a driver first');
+        return;
+    }
+
+    try {
+        // Fetch the last 30 status changes for this driver
+        const { data, error } = await sb
+            .from('driver_status_log')
+            .select('*')
+            .eq('driver_id', driverId)
+            .order('created_at', { ascending: false })
+            .limit(30);
+
+        if (error) throw error;
+
+        // Get driver name for the modal title
+        const driver = _trackingData.find(d => d.id === driverId);
+        const driverName = driver ? driver.full_name : 'Driver';
+
+        // Build modal HTML
+        const historyRows = (data || []).map(log => {
+            const isOnline = log.status === 'online';
+            const statusColor = isOnline ? 'var(--success-green)' : 'var(--input-gray)';
+            const statusLabel = isOnline ? 'ONLINE' : 'OFFLINE';
+
+            // Map source values to readable labels
+            const sourceLabels = {
+                manual:     'Manual Toggle',
+                gps:        'GPS Auto',
+                system:     'System Auto',
+                logout:     'Logged Out',
+                app_exit:   'App Closed',
+            };
+            const sourceLabel = sourceLabels[llog.reason] || log.reason || '—';
+
+            // Format the timestamp
+            const timeStr = new Date(log.created_at).toLocaleString('en-ZA', {
+                dateStyle: 'short',
+                timeStyle: 'short',
+            });
+
+            // GPS link if coordinates are available
+            const gpsLine = (log.latitude && log.longitude)
+                ? `<div style="font-size:10px;color:#9A9EA6;margin-top:4px">
+                       📍 ${Number(log.latitude).toFixed(4)}, ${Number(log.longitude).toFixed(4)}
+                       ${log.gps_accuracy ? '(±' + Number(log.gps_accuracy).toFixed(0) + 'm)' : ''}
+                       <a href="https://maps.google.com/?q=${log.latitude},${log.longitude}"
+                          target="_blank"
+                          style="color:var(--blue);margin-left:6px">
+                           View on Map
+                       </a>
+                   </div>`
+                : '';
+
+            return `
+                <div style="padding:12px 0;border-bottom:1px solid #F1F5F5">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <span style="
+                            display:inline-flex;
+                            align-items:center;
+                            gap:6px;
+                            padding:3px 10px;
+                            border-radius:20px;
+                            font-size:11px;
+                            font-weight:600;
+                            background:${statusColor}20;
+                            color:${statusColor}">
+                            <span style="
+                                width:6px;
+                                height:6px;
+                                border-radius:3px;
+                                background:${statusColor};
+                                display:inline-block">
+                            </span>
+                            ${statusLabel}
+                        </span>
+                        <span style="font-size:11px;color:#9A9EA6">${timeStr}</span>
+                    </div>
+                    <div style="font-size:11px;color:#9A9EA6">
+                        Source: <strong>${sourceLabel}</strong>
+                        ${log.reason ? ' • ' + log.reason : ''}
+                    </div>
+                    ${gpsLine}
+                </div>
+            `;
+        }).join('');
+
+        // If no history yet
+        const bodyContent = (data && data.length > 0)
+            ? historyRows
+            : '<div style="text-align:center;padding:40px;color:#9A9EA6">No status history found</div>';
+
+        // Build and append the modal to the page
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay show';
+        modal.innerHTML = `
+            <div class="modal modal-sm">
+                <div class="modal-hdr">
+                    <span class="modal-title">
+                        <i class="fas fa-history" style="margin-right:8px;color:var(--primary-red)"></i>
+                        ${driverName} — Status History
+                    </span>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body" style="max-height:420px;overflow-y:auto;padding:16px 24px">
+                    ${bodyContent}
+                </div>
+                <div class="modal-ftr">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+    } catch (e) {
+        console.error('[STATUS_HISTORY] Error:', e);
+        toast('error', 'Failed to load status history: ' + e.message);
+    }
+}
+// Function to simulate driver movement (for testing)
+// Remove this in production - it's just for demonstration
 function simulateDriverMovements() {
     if(!_trackingData) return;
     const onlineDrivers = _trackingData.filter(d => d.online_status === 'online' && d.id);
@@ -1842,10 +2094,26 @@ function _startAutoRefresh(){
     },15000);
 }
 function _stopAutoRefresh(){
-    clearInterval(_autoRefreshTimer);
-    _autoRefreshTimer=null;
-}
+    if (_autoRefreshTimer) {
+        clearInterval(_autoRefreshTimer);
+        _autoRefreshTimer = null;
+    }
+    
+    if (_trackingInterval) {
+        clearInterval(_trackingInterval);
+        _trackingInterval = null;
+    }
 
+    // Clean up realtime channels when leaving tracking page
+    if (_realtimeDriverSubscription) {
+        sb.removeChannel(_realtimeDriverSubscription);
+        _realtimeDriverSubscription = null;
+    }
+    if (_realtimeStatusLogSubscription) {
+        sb.removeChannel(_realtimeStatusLogSubscription);
+        _realtimeStatusLogSubscription = null;
+    }
+}
 /* ============================================================
    REST OF APP — UNCHANGED
    ============================================================ */
@@ -1874,6 +2142,10 @@ function go(p){
     if(p==='drivers')loadDrivers();
     if(p==='deliveries')loadDeliveries();
     if(p==='inventory')loadInventory();
+
+    if(p==='earnings')loadEarnings();
+    if(p==='tracking'){loadTracking();_startAutoRefresh();loadStatusHistoryDrivers();loadStatusHistory();}else{_stopAutoRefresh();}    if(p==='temporary')loadTemp();
+
     if(p==='earnings')loadEarningsWithPayroll();  // CHANGED: use payroll version
     if(p==='tracking'){loadTracking();_startAutoRefresh();}else{_stopAutoRefresh();}
     if(p==='temporary')loadTemp();
@@ -2034,6 +2306,112 @@ async function bulkNotif(target,type,title,msg){try{let q=sb.from('drivers').sel
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 function toast(type,msg){const icons={success:'<i class="fas fa-check-circle" style="color:var(--success-green)"></i>',error:'<i class="fas fa-exclamation-circle" style="color:var(--error-red)"></i>',warning:'<i class="fas fa-exclamation-triangle" style="color:var(--warning-orange)"></i>',info:'<i class="fas fa-info-circle" style="color:var(--blue)"></i>'};const c=document.getElementById('toastBox'),t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`${icons[type]||icons.info}<span class="toast-msg">${msg}</span><button class="toast-x" onclick="this.parentElement.remove()">&times;</button>`;c.appendChild(t);setTimeout(()=>{if(t.parentElement)t.remove();},5000);}
+
+
+// Load driver filter options for history
+// --- 1. Load the Filter Dropdown ---
+async function loadStatusHistoryDrivers() {
+  const sel = document.getElementById('histDriverFilter');
+  if (!sel) return;
+  try {
+    const { data } = await sb.from('drivers').select('id, full_name').order('full_name');
+    sel.innerHTML = '<option value="">All Drivers</option>';
+    (data || []).forEach(d => {
+      sel.innerHTML += `<option value="${d.id}">${d.full_name}</option>`;
+    });
+  } catch (err) {
+    console.error("Dropdown error:", err.message);
+  }
+}
+
+// --- 2. Load the Table Data ---
+async function loadStatusHistory() {
+  const tb = document.getElementById('statusHistoryTbl');
+  if (!tb) return;
+  tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#9A9EA6"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+
+  try {
+    const driverId = document.getElementById('histDriverFilter')?.value;
+    
+    // Fetch logs AND driver names using the Foreign Key join
+    let query = sb
+      .from('driver_status_log')
+      .select('*, drivers(full_name)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (driverId) query = query.eq('driver_id', driverId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (!data?.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="empty"><p>No status history found</p></td></tr>';
+      return;
+    }
+
+    const rows = data.map((log, i) => {
+      const isOnline = log.status === 'online';
+      const statusColor = isOnline ? 'var(--success-green)' : 'var(--input-gray)';
+      const statusIcon = isOnline ? 'fa-signal' : 'fa-times-circle';
+      const driverName = log.drivers?.full_name || 'Unknown';
+
+      const prevLog = data.slice(i + 1).find(l => l.driver_id === log.driver_id);
+      let duration = '—';
+      if (prevLog && isOnline) {
+        const ms = new Date(log.created_at) - new Date(prevLog.created_at);
+        const mins = Math.abs(Math.floor(ms / 60000));
+        duration = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+      }
+
+      const hasGps = log.latitude && log.longitude;
+      const gpsLink = hasGps
+        ? `<a href="https://www.google.com/maps?q=${log.latitude},${log.longitude}" target="_blank" style="color:var(--blue);font-size:11px"><i class="fas fa-map-marker-alt"></i> View</a>`
+        : '<span style="color:#9A9EA6;font-size:11px">No GPS</span>';
+
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="tbl-av" style="background:${isOnline ? 'var(--success-green)' : 'var(--input-gray)'}">
+              ${driverName[0].toUpperCase()}
+            </span>
+            <span class="tbl-name">${driverName}</span>
+          </div>
+        </td>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:${statusColor}20;color:${statusColor}">
+            <i class="fas ${statusIcon}"></i>
+            ${log.status.toUpperCase()}
+          </span>
+        </td>
+        <td style="font-size:12px;color:var(--medium-gray)">${log.reason || '—'}</td>
+        <td style="font-size:12px;color:var(--dark-gray)">
+          ${new Date(log.created_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'medium' })}
+        </td>
+        <td style="font-size:12px;color:${isOnline ? 'var(--success-green)' : 'var(--input-gray)'};font-weight:600">${duration}</td>
+        <td>${gpsLink}</td>
+      </tr>`;
+    });
+
+    tb.innerHTML = rows.join('');
+  } catch (e) {
+    console.error('loadStatusHistory error:', e);
+    tb.innerHTML = `<tr><td colspan="6" class="empty">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// --- 3. RUN EVERYTHING AT THE END ---
+async function initDashboard() {
+    await checkSess();             // 1st: Check login
+    await loadStatusHistoryDrivers(); // 2nd: Load Dropdown
+    await loadStatusHistory();        // 3rd: Load Table
+    calc();                           // 4th: Load Math
+    if (typeof renderSelectedLoadProducts === "function") {
+        renderSelectedLoadProducts();
+    }
+}
+
+initDashboard();
 
 let currentPayrollFilter = 'all';
 let earningsDataForPayroll = [];  // store combined earnings records with driver info
