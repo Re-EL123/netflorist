@@ -30,7 +30,9 @@
         .login-overlay.hidden { opacity:0; pointer-events:none; }
         .login-box { background:var(--white); border-radius:24px; padding:48px 40px; width:420px; max-width:90%; box-shadow:0 20px 60px rgba(0,0,0,.3); text-align:center; }
         .login-logo { width:80px; height:80px; background:var(--primary-red); border-radius:20px; margin:0 auto 24px; display:flex; justify-content:center; align-items:center; font-size:32px; color:#fff; }
-        .login-title { font-size:24px; font-weight:700; color:var(--primary-red); text-transform:uppercase; margin-bottom:4px; }
+        .login-logo img { width:100%; height:100%; object-fit:contain; }
+        .login-title { display:none; }
+        .login-sub { display:none; }
         .login-sub { font-size:14px; color:var(--input-gray); margin-bottom:32px; }
         .login-form .fg { margin-bottom:20px; text-align:left; }
         .login-form .fl { font-size:12px; font-weight:500; color:var(--dark-gray); text-transform:uppercase; margin-bottom:8px; display:block; }
@@ -46,9 +48,10 @@
         .sidebar { position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh; background:linear-gradient(180deg,var(--primary-red),#d4345a); z-index:1000; overflow-y:auto; transition:transform .3s; }
         .sidebar-backdrop { display:none; }
         .sb-head { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,.15); text-align:center; }
-        .sb-logo { width:50px; height:50px; background:rgba(255,255,255,.2); border-radius:14px; margin:0 auto 12px; display:flex; justify-content:center; align-items:center; font-size:22px; }
-        .sb-brand { font-size:18px; font-weight:700; color:#fff; text-transform:uppercase; }
-        .sb-brand-sub { font-size:11px; color:rgba(255,255,255,.7); text-transform:uppercase; letter-spacing:1px; }
+        .sb-logo { width:50px; height:50px; margin:0 auto 12px; display:flex; justify-content:center; align-items:center; border-radius:14px; }
+        .sb-logo img { width:100%; height:100%; object-fit:contain; }
+        .sb-brand { display:none; }
+        .sb-brand-sub { display:none; }
         .sb-nav { padding:16px 0; }
         .sb-sec { font-size:10px; font-weight:600; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:1.5px; padding:8px 24px; margin-top:8px; }
         .sb-link { display:flex; align-items:center; padding:12px 24px; color:rgba(255,255,255,.8); text-decoration:none; font-size:14px; font-weight:500; transition:all .2s; cursor:pointer; border-left:3px solid transparent; }
@@ -386,6 +389,11 @@
         /* ===== RESPONSIVE ===== */
         @media(max-width:1200px) { .stats-grid{grid-template-columns:repeat(2,1fr);} .track-layout{grid-template-columns:1fr !important;} }
         @media(max-width:768px) {
+            .login-overlay{padding:18px;align-items:flex-start;overflow-y:auto;}
+            .login-box{width:100%;max-width:520px;padding:32px 22px;border-radius:20px;margin:24px auto;}
+            .login-logo{width:80px;height:80px;margin-bottom:10px;}
+            .login-title-logo{width:160px;height:42px;}
+            .login-sub{font-size:13px;margin-bottom:24px;}
             .sidebar{transform:translateX(-100%);} .sidebar.open{transform:translateX(0);}
             .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:900;opacity:0;pointer-events:none;transition:opacity .25s;}
             .sidebar-backdrop.show{opacity:1;pointer-events:auto;}
@@ -404,6 +412,16 @@
             #pg-inventory form > div[style*='display:flex;gap:10px'] .btn{width:100%;justify-content:center;}
             .chart-summary-bar{grid-template-columns:1fr 1fr;}
             .chart-summary-item:nth-child(2){border-right:none;}
+        }
+        @media(max-width:480px) {
+            .login-overlay{padding:12px;}
+            .login-box{padding:26px 16px;border-radius:18px;max-width:none;}
+            .login-logo{width:72px;height:72px;}
+            .login-title-logo{width:148px;height:38px;}
+            .login-form .fi{height:44px;font-size:13px;}
+            .login-btn{height:46px;font-size:14px;}
+            .toast{min-width:0;width:calc(100vw - 24px);}
+            .toast-box{left:12px;right:12px;top:12px;}
         }
         .load-product-row { grid-template-columns:2fr 1fr auto; }
 
@@ -510,7 +528,7 @@
 <!-- LOGIN -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
-        <div class="login-logo"><i class="fas fa-truck"></i></div>
+        <div class="login-logo"><img src="../assets/logo.png" alt="Netflorist Logo"></div>
         <h1 class="login-title">Netflorist</h1>
         <p class="login-sub">Driver Management Admin Panel</p>
         <form class="login-form" onsubmit="handleLogin(event)">
@@ -525,7 +543,7 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
     <div class="sb-head">
-        <div class="sb-logo">🌸</div>
+        <div class="sb-logo"><img src="../assets/logo.png" alt="Netflorist Logo"></div>
         <div class="sb-brand">Netflorist</div>
         <div class="sb-brand-sub">Driver Admin</div>
     </div>
@@ -2045,7 +2063,7 @@ async function viewDriverStatusHistory(driverId) {
     }
 }
 // Function to simulate driver movement (for testing)
-// Remove this in production - it's just for demonstration
+
 function simulateDriverMovements() {
     if(!_trackingData) return;
     const onlineDrivers = _trackingData.filter(d => d.online_status === 'online' && d.id);
@@ -2114,9 +2132,7 @@ function _stopAutoRefresh(){
         _realtimeStatusLogSubscription = null;
     }
 }
-/* ============================================================
-   REST OF APP — UNCHANGED
-   ============================================================ */
+
 
 function updateDriverTypeInfo(type){const panel=document.getElementById('typeInfoPanel'),titleEl=document.getElementById('typeInfoTitle'),descEl=document.getElementById('typeInfoDesc');if(type==='permanent'){titleEl.innerHTML='Permanent Driver';descEl.innerHTML='Full-time driver with commission-based earnings (5% of delivery value). Cannot be changed after creation.';panel.style.borderLeftColor='var(--primary-purple)';}else if(type==='owner'){titleEl.innerHTML='Owner Driver';descEl.innerHTML='Vehicle owner with per-unit rate earnings (R30 per unit). Cannot be changed after creation.';panel.style.borderLeftColor='var(--blue)';}else{titleEl.innerHTML='Temporary Driver';descEl.innerHTML='Seasonal/contract driver with per-unit rate earnings (R50 per unit). Cannot be changed after creation.';panel.style.borderLeftColor='var(--warning-orange)';}}
 function updateCharCount(inputId,counterId,max){const v=document.getElementById(inputId).value.length,el=document.getElementById(counterId);el.textContent=v+' / '+max;el.className='char-counter';if(v>=max)el.classList.add('danger');else if(v>=max*0.8)el.classList.add('warn');}
@@ -2435,133 +2451,102 @@ async function initPayrollTable() {
 
 async function loadEarningsWithPayroll() {
     try {
-        // Get current month boundaries
-        const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        
-        // Fetch all delivered deliveries
         const { data: deliveries, error: delErr } = await sb
             .from('deliveries')
             .select('*, drivers:driver_id(full_name, driver_type, id)')
             .eq('status', 'delivered')
             .order('delivered_time', { ascending: false });
         if (delErr) throw delErr;
-        
-        // Fetch all payouts
+
         let payouts = [];
-        let useFallback = false;
         try {
             const { data: p, error: pErr } = await sb.from('driver_payouts').select('*');
             if (!pErr && p) payouts = p;
-            else useFallback = true;
-        } catch(e) { useFallback = true; }
-        
-        if (useFallback) {
-            const stored = localStorage.getItem('netflorist_payouts');
-            if (stored) payouts = JSON.parse(stored);
+        } catch(e) {}
+
+        // Always merge localStorage so nothing is missed
+        const stored = localStorage.getItem('netflorist_payouts');
+        if (stored) {
+            const localPayouts = JSON.parse(stored);
+            localPayouts.forEach(lp => {
+                if (!payouts.find(p => p.driver_id === lp.driver_id && p.paid_at === lp.paid_at)) {
+                    payouts.push(lp);
+                }
+            });
         }
-        
-        // Group deliveries by driver
-        const driverDeliveriesMap = new Map();
-        
+
+        const driverMap = new Map();
         (deliveries || []).forEach(d => {
             const driver = d.drivers;
             if (!driver) return;
             const driverId = driver.id;
-            
-            if (!driverDeliveriesMap.has(driverId)) {
-                driverDeliveriesMap.set(driverId, {
+            if (!driverMap.has(driverId)) {
+                driverMap.set(driverId, {
                     driver_id: driverId,
                     driver_name: driver.full_name || 'Unknown',
                     driver_type: driver.driver_type || 'permanent',
                     deliveries: []
                 });
             }
-            driverDeliveriesMap.get(driverId).deliveries.push({
+            driverMap.get(driverId).deliveries.push({
                 id: d.id,
                 fee: d.delivery_fee || 0,
                 value: d.delivery_value || 0,
-                units: d.grouped_units || Math.ceil((d.items_count || 1)/2),
+                units: d.grouped_units || Math.ceil((d.items_count || 1) / 2),
                 delivered_time: d.delivered_time,
                 order_id: d.order_id
             });
         });
-        
-        // For each driver, calculate pending earnings (deliveries after last payout)
+
         const earningsArray = [];
-        
-        for (let [driverId, data] of driverDeliveriesMap.entries()) {
-            // Sort deliveries by date (oldest first to newest)
-            const sortedDeliveries = [...data.deliveries].sort((a, b) => 
-                new Date(a.delivered_time) - new Date(b.delivered_time)
-            );
-            
-            // Find the latest payout for this driver
-            const driverPayouts = payouts.filter(p => p.driver_id === driverId).sort((a, b) => 
-                new Date(b.paid_at) - new Date(a.paid_at)
-            );
-            const lastPayout = driverPayouts[0];
-            
+
+        for (let [driverId, data] of driverMap.entries()) {
+            const driverPayouts = payouts
+                .filter(p => p.driver_id === driverId)
+                .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at));
+
+            const lastPayout = driverPayouts[0] || null;
+            const lastPayoutDate = lastPayout ? new Date(lastPayout.paid_at) : null;
+
             let pendingEarnings = 0;
             let paidEarnings = 0;
-            let pendingDeliveries = [];
-            let paidDeliveries = [];
-            
-            if (!lastPayout) {
-                // No payouts ever - all deliveries are pending
-                pendingEarnings = sortedDeliveries.reduce((sum, d) => sum + d.fee, 0);
-                pendingDeliveries = sortedDeliveries;
-            } else {
-                const lastPayoutDate = new Date(lastPayout.paid_at);
-                // All deliveries AFTER the last payout date are pending
-                for (const delivery of sortedDeliveries) {
-                    const deliveryDate = new Date(delivery.delivered_time);
-                    if (deliveryDate > lastPayoutDate) {
-                        pendingEarnings += delivery.fee;
-                        pendingDeliveries.push(delivery);
-                    } else {
-                        paidEarnings += delivery.fee;
-                        paidDeliveries.push(delivery);
-                    }
+            let totalUnits = 0;
+            let totalValue = 0;
+
+            data.deliveries.forEach(delivery => {
+                const deliveredAt = new Date(delivery.delivered_time);
+                totalUnits += delivery.units;
+                totalValue += delivery.value;
+
+                if (!lastPayoutDate || deliveredAt > lastPayoutDate) {
+                    pendingEarnings += delivery.fee;
+                } else {
+                    paidEarnings += delivery.fee;
                 }
-            }
-            
-            const totalEarnings = pendingEarnings + paidEarnings;
-            const totalDeliveries = sortedDeliveries.length;
-            const totalUnits = sortedDeliveries.reduce((sum, d) => sum + d.units, 0);
-            const totalValue = sortedDeliveries.reduce((sum, d) => sum + d.value, 0);
-            
-            // Status: PENDING if there are any deliveries after last payout
-            const status = pendingEarnings > 0 ? 'pending' : 'paid';
-            
+            });
+
             earningsArray.push({
                 driver_id: driverId,
                 driver_name: data.driver_name,
                 driver_type: data.driver_type,
-                total_deliveries: totalDeliveries,
+                total_deliveries: data.deliveries.length,
                 total_units: totalUnits,
                 total_value: totalValue,
-                total_earnings: totalEarnings,
+                total_earnings: pendingEarnings + paidEarnings,
                 pending_earnings: pendingEarnings,
-                payroll_status: status,
+                payroll_status: pendingEarnings > 0 ? 'pending' : 'paid',
                 payment_ref: lastPayout?.reference || '',
                 paid_at: lastPayout?.paid_at || null,
                 payment_method: lastPayout?.payment_method || '',
                 last_payout_date: lastPayout?.paid_at || null
             });
         }
-        
-        // Filter drivers with deliveries
-        const filteredEarnings = earningsArray.filter(e => e.total_deliveries > 0);
-        
-        earningsDataForPayroll = filteredEarnings;
+
+        earningsDataForPayroll = earningsArray.filter(e => e.total_deliveries > 0);
         renderPayrollTable();
         updatePayrollSummary();
         loadPaymentHistory();
-        
-        console.log("Earnings loaded:", earningsDataForPayroll);
-        
+
     } catch(e) {
         console.error(e);
         document.getElementById('earnTbl').innerHTML = '<tr><td colspan="9" class="empty"><p>Failed to load earnings</p></td></tr>';
@@ -2578,35 +2563,58 @@ function renderPayrollTable() {
         tbody.innerHTML = '<tr><td colspan="9" class="empty"><p>No earnings data</p></td></tr>';
         return;
     }
+
     tbody.innerHTML = filtered.map(e => {
+        const hasPending = e.pending_earnings > 0;
+
         let statusBadge = '';
-        if (e.payroll_status === 'paid') {
-            statusBadge = '<span class="payroll-badge paid"><i class="fas fa-check-circle"></i> Paid</span>';
-        } else {
-            statusBadge = '<span class="payroll-badge pending"><i class="fas fa-hourglass-half"></i> Pending</span>';
-        }
-        const refDisplay = e.payment_ref ? `<span class="transaction-id">${e.payment_ref.substring(0,15)}</span>` : '—';
         let actionBtn = '';
-        if (e.payroll_status === 'pending' && e.pending_earnings > 0) {
-            actionBtn = `<button class="btn btn-sm btn-success" onclick="openPayrollModal('${e.driver_id}', '${e.driver_name}', ${e.pending_earnings})"><i class="fas fa-money-bill-wave"></i> Pay Now (R${e.pending_earnings.toFixed(2)})</button>`;
-        } else if (e.payroll_status === 'paid') {
-            actionBtn = `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.6"><i class="fas fa-check-circle"></i> Paid</button>`;
+
+        if (hasPending) {
+            statusBadge = `<span class="payroll-badge pending">
+                            <i class="fas fa-hourglass-half"></i> PENDING
+                          </span>`;
+            actionBtn = `<button class="btn btn-sm btn-primary"
+                            onclick="openPayrollModal('${e.driver_id}', '${escapeHtml(e.driver_name)}', ${e.pending_earnings})">
+                            <i class="fas fa-money-bill-wave"></i> PAY NOW
+                            <span style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:12px;margin-left:4px;font-size:10px">R${e.pending_earnings.toFixed(2)}</span>
+                         </button>`;
         } else {
-            actionBtn = `<button class="btn btn-sm btn-warning" disabled>No pending</button>`;
+            statusBadge = `<span class="payroll-badge paid">
+                            <i class="fas fa-check-circle"></i> PAID
+                          </span>`;
+            actionBtn = `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.55;cursor:not-allowed">
+                            <i class="fas fa-check"></i> PAID
+                         </button>`;
         }
+
+        const refDisplay = e.payment_ref
+            ? `<span class="transaction-id" title="${escapeHtml(e.payment_ref)}">${e.payment_ref.substring(0, 15)}${e.payment_ref.length > 15 ? '…' : ''}</span>`
+            : '—';
+
+        const paidOnLine = (!hasPending && e.paid_at)
+            ? `<div style="font-size:10px;color:var(--input-gray);margin-top:2px">Paid ${new Date(e.paid_at).toLocaleDateString('en-ZA')}</div>`
+            : '';
+
         return `<tr>
             <td><span class="tbl-name">${escapeHtml(e.driver_name)}</span></td>
-            <td><span class="dt-badge dt-${e.driver_type}">${e.driver_type === 'owner' ? 'Owner Driver' : e.driver_type}</span></td>
-            <td>${e.total_deliveries}</td>
+            <td><span class="dt-badge dt-${e.driver_type}">${e.driver_type === 'owner' ? 'OWNER' : e.driver_type.toUpperCase()}</span></td>
+            <td style="font-weight:600">${e.total_deliveries}</td>
             <td>${e.total_units}</td>
             <td>R${e.total_value.toFixed(2)}</td>
-            <td style="font-weight:700;color:var(--primary-red)">R${e.total_earnings.toFixed(2)}<br><small style="font-size:10px;color:var(--input-gray)">Pending: R${e.pending_earnings.toFixed(2)}</small></td>
+            <td style="font-weight:700;color:${hasPending ? '#c07800' : 'var(--success-green)'}">
+                R${e.total_earnings.toFixed(2)}
+                <div style="font-size:10px;color:var(--input-gray);margin-top:2px">
+                    ${hasPending ? `Pending: R${e.pending_earnings.toFixed(2)}` : 'Fully paid'}
+                </div>
+            </td>
             <td>${statusBadge}</td>
-            <td>${refDisplay}</td>
+            <td>${refDisplay}${paidOnLine}</td>
             <td class="earnings-actions">${actionBtn}</td>
         </tr>`;
     }).join('');
 }
+
 
 
 function updatePayrollSummary() {
@@ -2626,69 +2634,115 @@ function filterPayroll(filter, btn) {
 }
 
 function openPayrollModal(driverId, driverName, amount) {
+    const pendingAmount = parseFloat(amount) || 0;
+    const modal = document.getElementById('payrollModal');
+    modal.setAttribute('data-amount', pendingAmount);
+    modal.setAttribute('data-driver-id', driverId);
+
     document.getElementById('payrollDriverId').value = driverId;
     document.getElementById('payrollDriverName').innerText = driverName;
-    document.getElementById('payrollAmount').innerText = 'R' + amount.toFixed(2);
-    document.getElementById('paymentRef').value = `Payroll ${new Date().toLocaleDateString('en-ZA')} - ${driverName}`;
+    document.getElementById('payrollAmount').innerHTML = `<strong style="font-size:24px;color:var(--primary-red)">R${pendingAmount.toFixed(2)}</strong>`;
+
+    const today = new Date().toLocaleDateString('en-ZA');
+    const defaultRef = `PAYOUT-${today}-${driverName.replace(/\s/g, '').substring(0,10)}`;
+    document.getElementById('paymentRef').value = defaultRef;
     document.getElementById('paymentMethod').value = 'Bank Transfer';
+
+    const driverEarnings = earningsDataForPayroll.find(e => e.driver_id === driverId);
+
     const preview = document.getElementById('receiptPreview');
-    preview.innerHTML = `<p><i class="fas fa-receipt"></i> <strong>Payment receipt preview</strong><br/>Driver: ${escapeHtml(driverName)}<br/>Amount: R${amount.toFixed(2)}<br/>Method: Bank Transfer<br/>Status: will be marked PAID</p>`;
+    preview.innerHTML = `
+        <div style="background:rgba(56,175,75,.05);border-radius:8px;padding:12px;margin-bottom:8px">
+            <p style="margin:0 0 8px 0"><i class="fas fa-receipt" style="color:var(--primary-purple)"></i> <strong>Payment Summary</strong></p>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--input-gray)">Driver:</span>
+                <span style="font-size:12px;font-weight:600">${escapeHtml(driverName)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--input-gray)">Pending amount:</span>
+                <span style="font-size:16px;font-weight:700;color:var(--primary-red)">R${pendingAmount.toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--input-gray)">Total deliveries:</span>
+                <span style="font-size:12px">${driverEarnings?.total_deliveries || 0}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--input-gray)">Payment method:</span>
+                <span style="font-size:12px">Bank Transfer</span>
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #E8ECF0;font-size:11px;color:var(--input-gray)">
+                <i class="fas fa-info-circle"></i> This will mark all pending deliveries for this driver as paid. The button will show PAY NOW again only after they complete a new delivery.
+            </div>
+        </div>
+    `;
+
     openModal('payrollModal');
 }
 
+
 async function confirmPayout() {
-    const driverId = document.getElementById('payrollDriverId').value;
-    const driverName = document.getElementById('payrollDriverName').innerText;
-    const amountText = document.getElementById('payrollAmount').innerText;
-    const amount = parseFloat(amountText.replace('R',''));
+    const modal = document.getElementById('payrollModal');
+    const driverId = modal.getAttribute('data-driver-id') || document.getElementById('payrollDriverId').value;
+    const driverName = document.getElementById('payrollDriverName').innerText.trim();
+    const amount = parseFloat(modal.getAttribute('data-amount')) || 0;
     const method = document.getElementById('paymentMethod').value;
     let ref = document.getElementById('paymentRef').value.trim();
-    if (!ref) ref = `PAYROLL-${new Date().toISOString().slice(0,10)}`;
-    
+    if (!ref) ref = `PAYROLL-${new Date().toISOString().slice(0, 10)}-${driverName.replace(/\s/g, '')}`;
+
+    if (amount <= 0) {
+        toast('warning', 'No pending earnings to pay out.');
+        return;
+    }
+
     const confirmBtn = document.getElementById('confirmPayBtn');
     confirmBtn.disabled = true;
     confirmBtn.innerHTML = '<span class="spinner"></span> Processing...';
-    
-    // Get current month period
+
     const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    
+    const payoutRecord = {
+        driver_id: driverId,
+        driver_name: driverName,  // Always store name directly
+        amount: amount,
+        status: 'paid',
+        reference: ref,
+        payment_method: method,
+        paid_at: now.toISOString(),
+        period_start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+        period_end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+    };
+
     try {
-        const payoutRecord = {
-            driver_id: driverId,
-            driver_name: driverName,  // ADD THIS - store driver name directly
-            amount: amount,
-            status: 'paid',
-            reference: ref,
-            payment_method: method,
-            paid_at: new Date().toISOString(),
-            period_start: periodStart,
-            period_end: periodEnd
-        };
-        
-        let success = false;
         try {
             const { error } = await sb.from('driver_payouts').insert(payoutRecord);
-            if (!error) success = true;
-            else throw new Error(error.message);
+            if (error) throw new Error(error.message);
         } catch(dbErr) {
-            console.warn('Using localStorage fallback for payout', dbErr);
-            let payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
+            console.warn('Using localStorage fallback:', dbErr);
+            const payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
             payoutRecord.id = 'local_' + Date.now() + '_' + driverId;
             payouts.push(payoutRecord);
             localStorage.setItem('netflorist_payouts', JSON.stringify(payouts));
-            success = true;
         }
-        
-        if (success) {
-            toast('success', `Payment of R${amount.toFixed(2)} processed for ${driverName} (${now.toLocaleString('en-ZA', {month:'long', year:'numeric'})})`);
-            closeModal('payrollModal');
-            await loadEarningsWithPayroll();
-            loadPaymentHistory();
-        } else {
-            throw new Error('Could not save payment');
+
+        // Immediately zero out pending for this driver in local state
+        const idx = earningsDataForPayroll.findIndex(e => e.driver_id === driverId);
+        if (idx !== -1) {
+            earningsDataForPayroll[idx].payroll_status = 'paid';
+            earningsDataForPayroll[idx].pending_earnings = 0;
+            earningsDataForPayroll[idx].payment_ref = ref;
+            earningsDataForPayroll[idx].paid_at = now.toISOString();
+            earningsDataForPayroll[idx].last_payout_date = now.toISOString();
         }
+
+        renderPayrollTable();
+        updatePayrollSummary();
+
+        toast('success', `Payment of R${amount.toFixed(2)} processed for ${driverName}`);
+        closeModal('payrollModal');
+
+        await loadEarningsWithPayroll();
+        await loadPaymentHistory();
+        await loadStats();
+
     } catch(e) {
         toast('error', 'Payment failed: ' + e.message);
     } finally {
@@ -2699,53 +2753,68 @@ async function confirmPayout() {
 
 async function loadPaymentHistory() {
     let payments = [];
+
+    // Fetch from DB
     try {
-        // First try to get payouts with the driver_name field (which we now store)
         const { data, error } = await sb
             .from('driver_payouts')
             .select('*')
-            .order('paid_at', { ascending: false })
-            .limit(50);
-        
+            .order('paid_at', { ascending: false });
+
         if (!error && data) {
             payments = data;
-        } else {
-            throw new Error('table fetch failed');
         }
     } catch(e) {
-        console.warn('Error fetching payouts:', e);
-        // Fallback: localStorage
-        const stored = localStorage.getItem('netflorist_payouts');
-        if (stored) {
-            payments = JSON.parse(stored);
-        }
+        console.warn('Error fetching payouts from DB:', e);
     }
-    
+
+    // Always merge localStorage payouts too so nothing is missed
+    const stored = localStorage.getItem('netflorist_payouts');
+    if (stored) {
+        const localPayouts = JSON.parse(stored);
+        localPayouts.forEach(lp => {
+            if (!payments.find(p => p.driver_id === lp.driver_id && p.paid_at === lp.paid_at)) {
+                payments.push(lp);
+            }
+        });
+    }
+
+    // Sort all combined payments by date descending
+    payments.sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at));
+
     const tbody = document.getElementById('paymentHistoryTbl');
     if (!payments.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty">No payment records</td></tr>';
         return;
     }
-    
-    // Display payment history with driver names from the stored field
+
     tbody.innerHTML = payments.map(p => {
-        // Get driver name from the driver_name field (now stored directly)
-        let driverDisplay = p.driver_name || 'Unknown';
-        
-        // Fallback to joining with drivers table if driver_name is missing
-        if (driverDisplay === 'Unknown' && p.driver_id) {
-            // Try to get from local allDrv array if available
-            const driver = allDrv?.find(d => d.id === p.driver_id);
-            if (driver) driverDisplay = driver.full_name;
+        // Resolve driver name — try stored name first, then earningsDataForPayroll, then allDrv
+        let driverDisplay = '';
+
+        if (p.driver_name && p.driver_name !== 'Unknown' && p.driver_name.trim() !== '') {
+            driverDisplay = p.driver_name;
         }
-        
+
+        if (!driverDisplay && p.driver_id) {
+            const fromEarnings = earningsDataForPayroll.find(e => e.driver_id === p.driver_id);
+            if (fromEarnings?.driver_name) driverDisplay = fromEarnings.driver_name;
+        }
+
+        if (!driverDisplay && p.driver_id) {
+            const fromDrv = allDrv?.find(d => d.id === p.driver_id);
+            if (fromDrv?.full_name) driverDisplay = fromDrv.full_name;
+        }
+
+        if (!driverDisplay) driverDisplay = 'Driver ' + (p.driver_id || '').toString().slice(0, 8);
+
         return `<tr>
-            <td style="font-size:12px; white-space:nowrap">${new Date(p.paid_at).toLocaleString('en-ZA')}</td>
+            <td style="font-size:12px;white-space:nowrap">${new Date(p.paid_at).toLocaleString('en-ZA', {dateStyle:'short', timeStyle:'short'})}</td>
             <td style="font-weight:600">${escapeHtml(driverDisplay)}</td>
             <td style="font-weight:700;color:var(--primary-red)">R${(p.amount || 0).toFixed(2)}</td>
-            <td><span class="transaction-id" title="${p.reference || '—'}">${p.reference ? p.reference.substring(0,20) + (p.reference.length > 20 ? '...' : '') : '—'}</span></td>
+            <td><span class="transaction-id" title="${escapeHtml(p.reference || '')}">${p.reference ? p.reference.substring(0, 20) + (p.reference.length > 20 ? '…' : '') : '—'}</span></td>
             <td>${p.payment_method || 'Bank Transfer'}</td>
-            <td><span class="payroll-badge paid">Completed</span></td>
+            <td><span class="payroll-badge paid"><i class="fas fa-check-circle"></i> Completed</span></td>
         </tr>`;
     }).join('');
 }
@@ -2765,51 +2834,77 @@ function openBulkPayrollModal() {
 
 async function processBulkPayroll() {
     const pendingItems = earningsDataForPayroll.filter(e => e.payroll_status === 'pending');
-    if (pendingItems.length === 0) { toast('warning', 'Nothing to process'); closeModal('bulkPayrollModal'); return; }
-    const globalRef = document.getElementById('bulkPaymentRef').value.trim() || `Bulk-${new Date().toISOString().slice(0,10)}`;
+    if (!pendingItems.length) { toast('warning', 'Nothing to process'); closeModal('bulkPayrollModal'); return; }
+
+    const globalRef = document.getElementById('bulkPaymentRef').value.trim() || `Bulk-${new Date().toISOString().slice(0, 10)}`;
     const method = document.getElementById('bulkPaymentMethod').value;
-    
-    // Get current period
+
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    
+
     const btn = document.querySelector('#bulkPayrollModal .btn-primary');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Processing...';
+
     let successCount = 0;
+
     for (const item of pendingItems) {
         try {
             const payoutRecord = {
                 driver_id: item.driver_id,
-                amount: item.total_earnings,
+                driver_name: item.driver_name,  // Always store name
+                amount: item.pending_earnings,
                 status: 'paid',
                 reference: globalRef,
                 payment_method: method,
-                paid_at: new Date().toISOString(),
+                paid_at: now.toISOString(),
                 period_start: periodStart,
                 period_end: periodEnd
             };
+
             let ok = false;
             try {
                 const { error } = await sb.from('driver_payouts').insert(payoutRecord);
                 if (!error) ok = true;
                 else throw new Error(error.message);
             } catch(e) {
-                let payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
+                const payouts = JSON.parse(localStorage.getItem('netflorist_payouts') || '[]');
                 payoutRecord.id = 'bulk_' + Date.now() + '_' + item.driver_id;
                 payouts.push(payoutRecord);
                 localStorage.setItem('netflorist_payouts', JSON.stringify(payouts));
                 ok = true;
             }
-            if (ok) successCount++;
-        } catch(err) { console.warn(err); }
+
+            if (ok) {
+                // Update local state immediately
+                const idx = earningsDataForPayroll.findIndex(e => e.driver_id === item.driver_id);
+                if (idx !== -1) {
+                    earningsDataForPayroll[idx].payroll_status = 'paid';
+                    earningsDataForPayroll[idx].pending_earnings = 0;
+                    earningsDataForPayroll[idx].payment_ref = globalRef;
+                    earningsDataForPayroll[idx].paid_at = now.toISOString();
+                    earningsDataForPayroll[idx].last_payout_date = now.toISOString();
+                }
+                successCount++;
+            }
+        } catch(err) {
+            console.warn(err);
+        }
     }
+
+    renderPayrollTable();
+    updatePayrollSummary();
+
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-check-double"></i> Process All';
     closeModal('bulkPayrollModal');
-    toast('success', `Bulk payroll completed: ${successCount} driver(s) paid for ${new Date().toLocaleString('en-ZA', {month:'long', year:'numeric'})}.`);
+
+    toast('success', `Bulk payroll completed: ${successCount} driver(s) paid`);
+
     await loadEarningsWithPayroll();
+    await loadPaymentHistory();
+    await loadStats();
 }
 
 function exportPayments() {
